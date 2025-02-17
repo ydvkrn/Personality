@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Page</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-image: url('https://i.giphy.com/l2QE5bDTfjOKHmme4.webp');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .shine-text {
+            color: white !important;
+            font-style: italic;
+            font-family: 'Courier New', Courier, monospace;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.7), 0 0 10px rgba(0, 0, 0, 0.6), 0 0 15px rgba(255, 255, 255, 0.4);
+        }
+
+        /* Disable Right-Click on images */
+        img {
+            pointer-events: none;
+        }
+
+        /* Realistic Smoke Animation */
+        @keyframes smoke-animation {
+            0% {
+                opacity: 1;
+                transform: scale(1) translate(0, 0);
+            }
+            50% {
+                opacity: 0.6;
+                transform: scale(1.1) translate(30px, 30px);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(1.5) translate(100px, 100px);
+            }
+        }
+
+        /* White Smoke at the edges */
+        .smoke {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: none;
+            box-shadow: 0 0 50px rgba(255, 255, 255, 0.5), 0 0 100px rgba(255, 255, 255, 0.3);
+            animation: smoke-animation 6s ease-out infinite;
+        }
+
+        .smoke.top-left {
+            top: 0;
+            left: 0;
+            animation-delay: 0s;
+        }
+
+        .smoke.top-right {
+            top: 0;
+            right: 0;
+            animation-delay: 1s;
+        }
+
+        .smoke.bottom-left {
+            bottom: 0;
+            left: 0;
+            animation-delay: 2s;
+        }
+
+        .smoke.bottom-right {
+            bottom: 0;
+            right: 0;
+            animation-delay: 3s;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center p-6 min-h-screen">
+
+    <!-- Realistic Smoke Animation in Corners -->
+    <div class="smoke top-left"></div>
+    <div class="smoke top-right"></div>
+    <div class="smoke bottom-left"></div>
+    <div class="smoke bottom-right"></div>
+
+    <!-- Audio player (hidden) that plays when page loads -->
+    <audio id="background-audio" src="https://aac.saavncdn.com/938/69774063f04a15d70cbe99ee9f83389a_320.mp4" autoplay loop volume="1"></audio>
+
+    <div class="text-center mb-6">
+        <h1 class="text-4xl font-extrabold text-gray-800 shine-text">WELCOME TO</h1>
+        <h2 class="text-5xl font-extrabold text-gray-800 shine-text">MSM WORLD!</h2>
+        <p class="text-lg italic text-gray-600 shine-text">Bad Thought Forever</p>
+    </div>
+
+    <div class="grid grid-cols-2 gap-6 w-full max-w-4xl">
+        <!-- Supreme Image -->
+        <div class="flex flex-col items-center">
+            <a href="supreme.html">
+                <img src="https://c4.wallpaperflare.com/wallpaper/269/218/470/king-crusader-kingdom-heaven-s-melody-heaven-lake-kingdom-of-heaven-hd-wallpaper-preview.jpg" alt="Supreme" class="w-64 h-64 object-cover rounded-lg mb-2">
+            </a>
+            <p class="font-semibold text-2xl shine-text">SUPREME</p>
+        </div>
+
+        <!-- Inspiration Image -->
+        <div class="flex flex-col items-center">
+            <a href="inspire.html">
+                <img src="https://res.cloudinary.com/dohrsxrnr/image/upload/v1739776759/SDM.jpg" alt="Inspiration" class="w-64 h-64 object-cover rounded-lg mb-2">
+            </a>
+            <p class="font-semibold text-2xl shine-text">INSPIRATION</p>
+        </div>
+
+        <!-- Favourite Image -->
+        <div class="flex flex-col items-center">
+            <a href="fav.html">
+                <img src="https://res.cloudinary.com/dohrsxrnr/image/upload/v1739776758/RK.jpg" alt="Favourite" class="w-64 h-64 object-cover rounded-lg mb-2">
+            </a>
+            <p class="font-semibold text-2xl shine-text">FAVOURITE</p>
+        </div>
+
+        <!-- Life Update Image -->
+        <div class="flex flex-col items-center">
+            <a href="life.html">
+                <img src="https://res.cloudinary.com/dohrsxrnr/image/upload/v1739776758/GF.jpg" alt="Life Update" class="w-64 h-64 object-cover rounded-lg mb-2">
+            </a>
+            <p class="font-semibold text-2xl shine-text">LIFE UPDATE</p>
+        </div>
+    </div>
+
+    <script>
+        // Ensure the audio starts at full volume
+        const audio = document.getElementById('background-audio');
+        audio.volume = 1; // Set volume to full
+        audio.play(); // Play audio
+
+        // Stop the audio when user navigates to another page
+        window.addEventListener('beforeunload', function () {
+            audio.pause();
+            audio.currentTime = 0; // Reset audio to the start
+        });
+
+        // Simulate exit on back button click by redirecting
+        window.history.pushState(null, '', location.href);
+        window.onpopstate = function() {
+            window.location.href = 'exit.html'; // Redirect to a different page (e.g., exit.html)
+        };
+    </script>
+</body>
+</html>
