@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Countdown and Redirect</title>
+    <style>
+        body {
+            background: url('https://i.giphy.com/l2QE5bDTfjOKHmme4.webp') no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: white;
+            font-size: 24px;
+            text-align: center;
+        }
+        #countdown {
+            font-size: 36px;
+            margin-bottom: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 10px;
+        }
+        #image {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <div id="countdown">5</div>
+        <img id="image" src="https://res.cloudinary.com/dohrsxrnr/image/upload/v1739785818/Sel.png" alt="Main Image">
+    </div>
+
+    <audio id="tickSound" preload="auto">
+        <source src="https://www.soundjay.com/button/beep-07.wav" type="audio/wav">
+    </audio>
+
+    <script>
+        let countdownElement = document.getElementById("countdown");
+        let countdownValue = 5;
+        const tickSound = document.getElementById("tickSound");
+
+        const countdownInterval = setInterval(() => {
+            countdownValue--;
+            countdownElement.textContent = countdownValue;
+            tickSound.play();
+            if (countdownValue === 0) {
+                clearInterval(countdownInterval);
+                window.location.href = "home.html";
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
