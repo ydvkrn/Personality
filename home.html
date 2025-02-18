@@ -49,13 +49,6 @@
             font-weight: bold;
             transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
         }
-        .loading-text {
-            color: white;
-            font-size: 1.5rem;
-            font-weight: bold;
-            display: none;
-            margin-top: 10px;
-        }
     </style>
 </head>
 <body>
@@ -64,7 +57,6 @@
         <img src="https://i.postimg.cc/Njbkc17s/Zqz-Bsh5-Le-NNTxw-WY-newsletter-risk1-gif-498-310.gif" alt="Warning GIF" class="rounded-lg shadow-lg">
         <div id="timer" class="timer">3</div>
         <button id="continue-btn" class="continue-btn">Enter</button>
-        <p id="loading-text" class="loading-text">Loading••••••</p>
     </div>
 
     <div id="main-content" class="hidden"></div>
@@ -73,7 +65,6 @@
     let countdown = 3;
     const timerElement = document.getElementById("timer");
     const continueBtn = document.getElementById("continue-btn");
-    const loadingText = document.getElementById("loading-text");
     const startScreen = document.getElementById("start-screen");
 
     const timerInterval = setInterval(() => {
@@ -88,7 +79,6 @@
 
     continueBtn.addEventListener("click", () => {
         continueBtn.style.display = "none";
-        loadingText.style.display = "block";
 
         // Load all videos in the background before showing the main page
         const inspirationVideo = document.createElement("video");
@@ -110,7 +100,6 @@
         const checkAllLoaded = () => {
             videosLoaded++;
             if (videosLoaded === 2) {
-                loadingText.style.display = "none";
                 startScreen.style.display = "none";
 
                 // Now Play Background Music
@@ -129,10 +118,10 @@
                 `;
 
                 const sections = [
-                    { name: "SUPREME", link: "supreme.html", media: "https://res.cloudinary.com/dohrsxrnr/video/upload/v1739875219/Supreme.mp4" },
+                    { name: "SUPREME", link: "supreme.html", media: "https://res.cloudinary.com/dohrsxrnr/video/upload/v1739876101/lmoi3nl1qin8iwtvh4qn.mp4" },
                     { name: "INSPIRATION", link: "inspire.html", media: "https://res.cloudinary.com/dohrsxrnr/video/upload/v1739872725/Sdm.mp4" },
                     { name: "FAVOURITE", link: "fav.html", media: "https://res.cloudinary.com/dohrsxrnr/video/upload/v1739871719/Billie.mp4" },
-                    { name: "LIFE UPDATE", link: "life.html", media: "https://res.cloudinary.com/dohrsxrnr/video/upload/v1739875216/Gf.mp4" }
+                    { name: "LIFE UPDATE", link: "life.html", media: "https://res.cloudinary.com/dohrsxrnr/video/upload/v1739876170/ron5ytvjwmfgba1use4j.mp4" }
                 ];
 
                 const contentGrid = document.getElementById("content-grid");
