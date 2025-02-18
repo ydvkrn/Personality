@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Warning</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
     <style>
         body {
             background-image: url('https://i.giphy.com/l2QE5bDTfjOKHmme4.webp');
@@ -15,8 +14,16 @@
             position: relative;
             overflow: hidden;
         }
+        .center-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+        }
         .shine-text {
-            color: white !important;
+            color: white;
             font-style: italic;
             font-family: 'Courier New', Courier, monospace;
             text-shadow: 0px 0px 10px rgba(0,0,0,0.7);
@@ -28,107 +35,138 @@
             text-shadow: 0px 0px 10px rgba(0,0,0,0.7);
             margin-top: 20px;
         }
-        .gif-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 60vh;
-        }
         .continue-btn {
             background-color: transparent;
             color: white;
-            padding: 10px 20px; /* Reduced padding */
-            font-size: 1.25rem; /* Reduced font size */
+            padding: 10px 20px;
+            font-size: 1.25rem;
             font-family: 'Poppins', sans-serif;
             cursor: pointer;
             border: 3px solid white;
-            border-radius: 10px; /* Slightly smaller border-radius */
+            border-radius: 10px;
             margin-top: 30px;
             display: none;
             font-weight: bold;
             transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
         }
-        .continue-btn:hover {
-            background-color: black;
+        .loading-text {
             color: white;
-            border-color: black;
-        }
-        .continue-btn.black-white {
-            background-color: transparent;
-            color: white;
-            border-color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: none;
+            margin-top: 10px;
         }
     </style>
 </head>
-<body class="bg-gray-100 flex flex-col items-center p-6 min-h-screen">
-    <div class="gif-container">
-        <img src="https://i.postimg.cc/Njbkc17s/Zqz-Bsh5-Le-NNTxw-WY-newsletter-risk1-gif-498-310.gif" alt="GIF Image" class="rounded-lg shadow-lg">
+<body>
+
+    <div class="center-container" id="start-screen">
+        <img src="https://i.postimg.cc/Njbkc17s/Zqz-Bsh5-Le-NNTxw-WY-newsletter-risk1-gif-498-310.gif" alt="Warning GIF" class="rounded-lg shadow-lg">
+        <div id="timer" class="timer">3</div>
+        <button id="continue-btn" class="continue-btn">Enter</button>
+        <p id="loading-text" class="loading-text">Loading••••••</p>
     </div>
 
-    <div id="timer" class="timer">3</div>
+    <div id="main-content" class="hidden"></div>
 
 <script>
     let countdown = 3;
     const timerElement = document.getElementById("timer");
-    const continueBtn = document.createElement("button");
-    continueBtn.classList.add("continue-btn");
-    continueBtn.textContent = "Enter";
-    document.body.appendChild(continueBtn);
+    const continueBtn = document.getElementById("continue-btn");
+    const loadingText = document.getElementById("loading-text");
+    const startScreen = document.getElementById("start-screen");
 
     const timerInterval = setInterval(() => {
         countdown--;
         timerElement.textContent = countdown;
-        
         if (countdown <= 0) {
             clearInterval(timerInterval);
-            // Hide the timer and show the continue button in black & white
             timerElement.style.display = "none";
             continueBtn.style.display = "block";
-            continueBtn.classList.add("black-white");
         }
     }, 1000);
 
-    // When the continue button is clicked
     continueBtn.addEventListener("click", () => {
-        // Play the audio
-        const audio = new Audio("https://res.cloudinary.com/dohrsxrnr/video/upload/v1739851237/Yeda.mp3");
-        audio.loop = true;
-        audio.play();
+        continueBtn.style.display = "none";
+        loadingText.style.display = "block";
 
-        // Change the page content to Home Page with updated text
-        document.body.innerHTML = `
-            <div class='text-center mb-6'>
-                <h1 class='text-4xl font-extrabold text-gray-800 shine-text'>WELCOME TO</h1>
-                <h2 class='text-5xl font-extrabold text-gray-800 shine-text'>MSM WORLD!</h2>
-                <p class='text-lg italic text-gray-600 shine-text'>Bad Thought Forever</p>
-            </div>
-            <div class='grid grid-cols-2 gap-6 w-full max-w-4xl'>
-                <div class='flex flex-col items-center'>
-                    <a href='supreme.html'>
-                        <img src='https://c4.wallpaperflare.com/wallpaper/269/218/470/king-crusader-kingdom-heaven-s-melody-heaven-lake-kingdom-of-heaven-hd-wallpaper-preview.jpg' alt='Supreme' class='w-64 h-64 object-cover rounded-lg mb-2'>
-                    </a>
-                    <p class='font-semibold text-2xl shine-text'>SUPREME</p>
-                </div>
-                <div class='flex flex-col items-center'>
-                    <a href='inspire.html'>
-                        <img src='https://res.cloudinary.com/dohrsxrnr/image/upload/v1739776759/SDM.jpg' alt='Inspiration' class='w-64 h-64 object-cover rounded-lg mb-2'>
-                    </a>
-                    <p class='font-semibold text-2xl shine-text'>INSPIRATION</p>
-                </div>
-                <div class='flex flex-col items-center'>
-                    <a href='fav.html'>
-                        <img src='https://res.cloudinary.com/dohrsxrnr/image/upload/v1739776758/RK.jpg' alt='Favourite' class='w-64 h-64 object-cover rounded-lg mb-2'>
-                    </a>
-                    <p class='font-semibold text-2xl shine-text'>FAVOURITE</p>
-                </div>
-                <div class='flex flex-col items-center'>
-                    <a href='life.html'>
-                        <img src='https://res.cloudinary.com/dohrsxrnr/image/upload/v1739776758/GF.jpg' alt='Life Update' class='w-64 h-64 object-cover rounded-lg mb-2'>
-                    </a>
-                    <p class='font-semibold text-2xl shine-text'>LIFE UPDATE</p>
-                </div>
-            </div>
-        `;
+        // Load all videos in the background before showing the main page
+        const inspirationVideo = document.createElement("video");
+        inspirationVideo.src = "https://res.cloudinary.com/dohrsxrnr/video/upload/v1739872725/Sdm.mp4";
+        inspirationVideo.autoplay = true;
+        inspirationVideo.loop = true;
+        inspirationVideo.muted = true;
+        inspirationVideo.style.display = "none";
+
+        const favouriteVideo = document.createElement("video");
+        favouriteVideo.src = "https://res.cloudinary.com/dohrsxrnr/video/upload/v1739871719/Billie.mp4";
+        favouriteVideo.autoplay = true;
+        favouriteVideo.loop = true;
+        favouriteVideo.muted = true;
+        favouriteVideo.style.display = "none";
+
+        // Wait for both videos to load before showing the main page
+        let videosLoaded = 0;
+        const checkAllLoaded = () => {
+            videosLoaded++;
+            if (videosLoaded === 2) {
+                loadingText.style.display = "none";
+                startScreen.style.display = "none";
+
+                // Now Play Background Music
+                const audio = new Audio("https://res.cloudinary.com/dohrsxrnr/video/upload/v1739851237/Yeda.mp3");
+                audio.loop = true;
+                audio.play();
+
+                document.getElementById("main-content").innerHTML = `
+                    <div class='text-center mb-6'>
+                        <h1 class='text-4xl font-extrabold shine-text'>WELCOME TO</h1>
+                        <h2 class='text-5xl font-extrabold shine-text'>MSM WORLD!</h2>
+                        <p class='text-lg italic shine-text'>Bad Thought Forever</p>
+                    </div>
+                    <div class='grid grid-cols-2 gap-6 w-full max-w-4xl' id="content-grid">
+                    </div>
+                `;
+
+                const sections = [
+                    { name: "SUPREME", link: "supreme.html", media: "https://c4.wallpaperflare.com/wallpaper/269/218/470/king-crusader-kingdom-heaven-s-melody-heaven-lake-kingdom-of-heaven-hd-wallpaper-preview.jpg" },
+                    { name: "INSPIRATION", link: "inspire.html", media: "https://res.cloudinary.com/dohrsxrnr/video/upload/v1739872725/Sdm.mp4" },
+                    { name: "FAVOURITE", link: "fav.html", media: "https://res.cloudinary.com/dohrsxrnr/video/upload/v1739871719/Billie.mp4" },
+                    { name: "LIFE UPDATE", link: "life.html", media: "https://res.cloudinary.com/dohrsxrnr/image/upload/v1739776758/GF.jpg" }
+                ];
+
+                const contentGrid = document.getElementById("content-grid");
+
+                sections.forEach(section => {
+                    let mediaElement;
+                    if (section.media.endsWith(".mp4")) {
+                        mediaElement = `<video class='w-64 h-64 object-cover rounded-lg mb-2' autoplay muted loop>
+                            <source src='${section.media}' type='video/mp4'>
+                            Your browser does not support the video tag.
+                        </video>`;
+                    } else {
+                        mediaElement = `<img src='${section.media}' alt='${section.name}' class='w-64 h-64 object-cover rounded-lg mb-2'>`;
+                    }
+
+                    contentGrid.innerHTML += `
+                        <div class='flex flex-col items-center'>
+                            <a href='${section.link}'>
+                                ${mediaElement}
+                            </a>
+                            <p class='font-semibold text-2xl shine-text'>${section.name}</p>
+                        </div>
+                    `;
+                });
+
+                document.getElementById("main-content").classList.remove("hidden");
+            }
+        };
+
+        inspirationVideo.onloadeddata = checkAllLoaded;
+        favouriteVideo.onloadeddata = checkAllLoaded;
+
+        document.body.appendChild(inspirationVideo);
+        document.body.appendChild(favouriteVideo);
     });
 </script>
 
