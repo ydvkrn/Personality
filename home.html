@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            text-align: center;
+            padding: 20px;
+        }
+        .shine-text {
+            font-style: italic;
+            text-shadow: 0px 0px 10px rgba(255, 255, 255, 0.7);
+        }
+        .video-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: black;
+        }
+        video {
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="video-container">
+        <video id="myVideo" autoplay playsinline>
+            <source src="https://res.cloudinary.com/dohrsxrnr/video/upload/v1742394360/sppjja2lgfc7bwm3x380.mp4" type="video/mp4">
+            आपका ब्राउज़र वीडियो टैग को सपोर्ट नहीं करता।
+        </video>
+    </div>
+
+    <script>
+        window.onload = function() {
+            let video = document.getElementById("myVideo");
+            video.muted = false;  // ऑडियो चालू करें
+            video.play();  // वीडियो ऑटो-प्ले करें
+        };
+    </script>
+
+</body>
+</html>
