@@ -7,13 +7,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            background-image: url('https://i.giphy.com/l2QE5bDTfjOKHmme4.webp');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
-            position: relative;
-            overflow: hidden;
             margin: 0;
+            overflow: hidden;
         }
         .center-container {
             display: flex;
@@ -54,12 +52,21 @@
             background-color: white;
             color: black;
         }
+        .content-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow-y: auto; /* Scroll enable */
+            padding-top: 50px;
+        }
         .video-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr); /* 2 columns strict */
+            grid-template-columns: repeat(2, 1fr);
             gap: 20px;
-            max-width: 800px; /* Control width */
-            margin: 0 auto; /* Center the grid */
+            width: 100%;
+            max-width: 500px;
+            margin-top: 20px;
         }
         .video-item {
             display: flex;
@@ -70,83 +77,82 @@
 </head>
 <body>
     <div class="center-container" id="start-screen">
-        <img src="https://i.postimg.cc/Njbkc17s/Zqz-Bsh5-Le-NNTxw-WY-newsletter-risk1-gif-498-310.gif" alt="Warning animation" class="rounded-lg shadow-lg">
+        <img id="warning-img" src="" alt="Warning animation" class="rounded-lg shadow-lg">
         <div id="timer" class="timer">3</div>
         <button id="continue-btn" class="continue-btn">Enter</button>
     </div>
 
-    <div id="main-content" class="hidden center-container"></div>
+    <div id="main-content" class="hidden content-container"></div>
 
     <script>
-        let countdown = 3;
-        const timerElement = document.getElementById("timer");
-        const continueBtn = document.getElementById("continue-btn");
-        const startScreen = document.getElementById("start-screen");
-        const mainContent = document.getElementById("main-content");
+        fetch('data.json')
+            .then(response => response.json())
+            .then(data => {
+                document.body.style.backgroundImage = `url('${data.content.backgroundImage}')`;
+                document.getElementById("warning-img").src = data.content.warningImage;
 
-        const timerInterval = setInterval(() => {
-            countdown--;
-            timerElement.textContent = countdown;
-            if (countdown <= 0) {
-                clearInterval(timerInterval);
-                timerElement.style.display = "none";
-                continueBtn.style.display = "block";
-            }
-        }, 1000);
+                let countdown = 3;
+                const timerElement = document.getElementById("timer");
+                const continueBtn = document.getElementById("continue-btn");
+                const startScreen = document.getElementById("start-screen");
+                const mainContent = document.getElementById("main-content");
 
-        continueBtn.addEventListener("click", () => {
-            startScreen.style.display = "none";
-            mainContent.classList.remove("hidden");
+                const timerInterval = setInterval(() => {
+                    countdown--;
+                    timerElement.textContent = countdown;
+                    if (countdown <= 0) {
+                        clearInterval(timerInterval);
+                        timerElement.style.display = "none";
+                        continueBtn.style.display = "block";
+                    }
+                }, 1000);
 
-            // Fetch data from GitHub JSON
-            fetch('data.json')
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
-                })
-                .then(data => {
-                    // Populate main content with dynamic data
+                continueBtn.addEventListener("click", () => {
+                    startScreen.style.display = "none";
+                    mainContent.classList.remove("hidden");
+
                     mainContent.innerHTML = `
-                        <div class='text-center mb-6'>
-                            <h1 class='text-4xl font-extrabold shine-text'>WELCOME TO</h1>
-                            <h2 class='text-5xl font-extrabold shine-text'>MSM WORLD!</h2>
-                            <p class='text-lg italic shine-text'>Bad Thought Forever</p>
+                        <div class='text-center'>
+                            <h1 class='text-4xl font-extrabold shine-text'>${data.content.welcomeText}</h1>
+                            <h2 class='text-5xl font-extrabold shine-text'>${data.content.mainTitle}</h2>
+                            <p class='text-lg italic shine-text'>${data.content.subtitle}</p>
                         </div>
                         <div class='video-grid' id='video-grid'></div>
                     `;
 
                     const videoGrid = document.getElementById('video-grid');
-                    data.videos.forEach(video => {
-                        const isVideo = video.media.toLowerCase().endsWith(".mp4") || 
-                                       video.media.toLowerCase().endsWith(".webm") || 
-                                       video.media.toLowerCase().endsWith(".mov");
+
+                    data.content.mediaItems.forEach(item => {
+                        const isVideo = item.media.toLowerCase().endsWith(".mp4") || 
+                                        item.media.toLowerCase().endsWith(".webm") || 
+                                        item.media.toLowerCase().endsWith(".mov");
+
                         const mediaElement = isVideo ?
                             `<video class='w-64 h-64 object-cover rounded-lg mb-2' autoplay muted loop>
-                                <source src='${video.media}' type='video/mp4'>
+                                <source src='${item.media}' type='video/mp4'>
                                 Your browser does not support the video tag.
                             </video>` :
-                            `<img src='${video.media}' alt='${video.name} preview' class='w-64 h-64 object-cover rounded-lg mb-2'>`;
+                            `<img src='${item.media}' alt='${item.name} preview' class='w-64 h-64 object-cover rounded-lg mb-2'>`;
 
                         videoGrid.innerHTML += `
                             <div class='video-item'>
-                                <a href='${video.link}'>
+                                <a href='${item.link}'>
                                     ${mediaElement}
                                 </a>
-                                <p class='font-semibold text-2xl shine-text'>${video.name}</p>
+                                <p class='font-semibold text-2xl shine-text'>${item.name}</p>
                             </div>
                         `;
                     });
 
-                    // Play audio from JSON
-                    const audio = new Audio(data.audio);
+                    const audio = new Audio(data.content.audio);
                     audio.loop = true;
                     audio.play().catch(err => console.log("Audio failed to play:", err));
-                })
-                .catch(err => {
-                    console.error("Failed to load JSON:", err);
-                    mainContent.innerHTML = `<p class='shine-text'>Error loading content. Check console.</p>`;
                 });
-        });
+            })
+            .catch(err => {
+                console.error("Failed to load JSON:", err);
+                document.getElementById("main-content").innerHTML = `<p class='shine-text'>Error loading content. Check console.</p>`;
+            });
     </script>
 </body>
 </html>
