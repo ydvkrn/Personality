@@ -26,7 +26,12 @@
             "name": "LEARN",
             "link": "life.html",
             "media": "https://i.postimg.cc/yx6bnK2t/image.jpg"
-        }
+        },
+      { "name": "Reel Of The Day",
+        "link": "reel.html"
+        "media": "https://res.cloudinary.com/dohrsxrnr/video/upload/v1742946525/k30qub9sodfffalrbaby.mp4"
+      }
+        
     ]
   }
 }
