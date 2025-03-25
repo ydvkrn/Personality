@@ -7,12 +7,12 @@
     "subtitle": "BAD THOUGHT FOREVER (BTF)",
     "audio": "https://res.cloudinary.com/dohrsxrnr/video/upload/v1742860819/bs40jscuamdnaxahhdjp.mp3",
     "mediaItems": [
-     {
-            "name": "TRIBUTE",
-            "link": "",
-            "media": "https://i.postimg.cc/fT8Fr4bh/Exploring-the-Complex-Legacy-of-XXXTentacion-the-Controversial-Rapper.jpg"
-        },
-     {
+      {
+        "name": "TRIBUTE",
+        "link": "",
+        "media": "https://i.postimg.cc/fT8Fr4bh/Exploring-the-Complex-Legacy-of-XXXTentacion-the-Controversial-Rapper.jpg"
+      },
+      {
         "name": "INSPIRATION",
         "media": "https://i.postimg.cc/d1djPfc6/Ranbir-Kapoor-at-IFFI2024-Ranbir-Kapoor-2.jpg",
         "link": "inspire.html"
@@ -22,16 +22,16 @@
         "media": "https://i.postimg.cc/x1r83Fk3/billieeilish-20250319-0002.jpg",
         "link": "fav.html"
       },
-{
-            "name": "LEARN",
-            "link": "life.html",
-            "media": "https://i.postimg.cc/yx6bnK2t/image.jpg"
-        },
-      { "name": "Reel Of The Day",
-        "link": "reel.html"
+      {
+        "name": "LEARN",
+        "link": "life.html",
+        "media": "https://i.postimg.cc/yx6bnK2t/image.jpg"
+      },
+      {
+        "name": "Reel Of The Day",
+        "link": "reel.html",
         "media": "https://res.cloudinary.com/dohrsxrnr/video/upload/v1742946525/k30qub9sodfffalrbaby.mp4"
       }
-        
     ]
   }
 }
