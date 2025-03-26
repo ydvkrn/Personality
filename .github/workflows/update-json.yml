@@ -2,8 +2,8 @@ name: Auto Update JSON Files
 
 on:
   schedule:
-    - cron: '0 * * * *' # Har ghante chalega (change kar sakte hain)
-  workflow_dispatch: # Manual trigger bhi available rahega
+    - cron: '0 * * * *' # Har ghante
+  workflow_dispatch:
 
 jobs:
   update-json:
@@ -14,11 +14,13 @@ jobs:
 
       - name: Fetch reels.json
         run: |
-          curl -o reels.json http://msmpr.free.nf/reels.json
+          curl -v -o reels.json http://msmpr.free.nf/reels.json || echo "Failed to fetch reels.json"
+          if [ ! -s reels.json ]; then echo "reels.json is empty or not downloaded"; exit 1; fi
 
       - name: Fetch profiles.json
         run: |
-          curl -o profiles.json http://msmpr.free.nf/profiles.json
+          curl -v -o profiles.json http://msmpr.free.nf/profiles.json || echo "Failed to fetch profiles.json"
+          if [ ! -s profiles.json ]; then echo "profiles.json is empty or not downloaded"; exit 1; fi
 
       - name: Commit and Push Changes
         run: |
