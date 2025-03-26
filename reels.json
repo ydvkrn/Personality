@@ -1,0 +1,23 @@
+{
+    "content": {
+        "mediaItems": [
+            {
+                "name": "Reel Of The Day",
+                "reels": [
+                    {
+                        "media": "https://res.cloudinary.com/dohrsxrnr/video/upload/v1742946525/k30qub9sodfffalrbaby.mp4",
+                        "title": "Billie Eilish ❤️",
+                        "username": "billieilish",
+                        "profile": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Billie_Eilish_2019_by_Glenn_Francis_%28cropped%29_2.jpg/1200px-Billie_Eilish_2019_by_Glenn_Francis_%28cropped%29_2.jpg"
+                    },
+                    {
+                        "media": "https://res.cloudinary.com/dohrsxrnr/video/upload/v1742947436/rp3ptutnkdryauassrpj.mp4",
+                        "title": "Attitude full of course",
+                        "username": "cod",
+                        "profile": "https://images.indianexpress.com/2024/10/Call-of-Duty-Microsoft.jpg?w=389"
+                    }
+                ]
+            }
+        ]
+    }
+}
