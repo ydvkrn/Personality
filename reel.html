@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reel Of The Day</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            background-color: #000;
+        }
+        .video-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            scroll-snap-align: start;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+        }
+        .start-button {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px 40px;
+            font-size: 24px;
+            background-color: #fff;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div id="reels-container"></div>
+
+    <script>
+        // JSON file se data fetch karna
+        fetch('path/to/your/data.json') // Apne JSON file ka path dalen
+            .then(response => response.json())
+            .then(data => {
+                const reels = data.content.mediaItems.find(item => item.name === "Reel Of The Day").reels;
+                const container = document.getElementById('reels-container');
+
+                // Har reel ke liye video container banayein
+                reels.forEach((reel, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'video-container';
+                    div.id = `reel${index}`;
+
+                    const button = document.createElement('button');
+                    button.className = 'start-button';
+                    button.textContent = 'Start';
+                    button.onclick = () => startVideo(`video${index}`);
+
+                    const video = document.createElement('video');
+                    video.id = `video${index}`;
+                    video.src = reel.media;
+                    video.muted = true;
+
+                    div.appendChild(button);
+                    div.appendChild(video);
+                    container.appendChild(div);
+
+                    // Video end hone par next video pe scroll
+                    video.onended = () => {
+                        const nextReel = document.getElementById(`reel${index + 1}`);
+                        if (nextReel) {
+                            window.scrollTo({ top: nextReel.offsetTop, behavior: 'smooth' });
+                            startVideo(`video${index + 1}`);
+                        }
+                    };
+                });
+            })
+            .catch(error => console.error('Error fetching JSON:', error));
+
+        function startVideo(videoId) {
+            const video = document.getElementById(videoId);
+            const button = video.parentElement.querySelector('.start-button');
+            button.style.display = 'none';
+            video.muted = false;
+            video.play();
+        }
+    </script>
+</body>
+</html>
