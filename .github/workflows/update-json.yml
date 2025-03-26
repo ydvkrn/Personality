@@ -14,21 +14,30 @@ jobs:
 
       - name: Fetch reels.json
         run: |
+          echo "Fetching reels.json..."
           curl -v -o ./reels.json http://msmpr.free.nf/reels.json || echo "Failed to fetch reels.json"
-          if [ ! -s reels.json ]; then echo "reels.json is empty"; exit 1; fi
-          cat reels.json # Content dikhao
+          if [ ! -s reels.json ]; then echo "Error: reels.json is empty"; exit 1; fi
+          echo "reels.json content:"
+          cat reels.json
 
       - name: Fetch profiles.json
         run: |
+          echo "Fetching profiles.json..."
           curl -v -o ./profiles.json http://msmpr.free.nf/profiles.json || echo "Failed to fetch profiles.json"
-          if [ ! -s profiles.json ]; then echo "profiles.json is empty"; exit 1; fi
-          cat profiles.json # Content dikhao
+          if [ ! -s profiles.json ]; then echo "Error: profiles.json is empty"; exit 1; fi
+          echo "profiles.json content:"
+          cat profiles.json
+
+      - name: Check Git Status
+        run: |
+          git status
+          ls -lh reels.json profiles.json # Files exist karti hain ya nahi
 
       - name: Commit and Push Changes
         run: |
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           git add reels.json profiles.json
-          git status # Debugging
-          git commit -m "Auto-update JSON files - $(date +%s)" || echo "No changes detected"
-          git push || echo "Push failed, check logs"
+          git status
+          git commit -m "Auto-update JSON files - $(date +%s)" || echo "No changes to commit, forcing update"
+          git push || (echo "Normal push failed, trying force push"; git push --force)
