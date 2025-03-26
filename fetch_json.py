@@ -1,36 +1,30 @@
 import requests
 import json
 
-# Proxy URL (इसे बदल सकते हैं)
-proxy_url = "https://api.allorigins.win/get?url="
+# सही URL डालो
+profiles_url = "http://msmpr.free.nf/profiles.json"
+reels_url = "http://msmpr.free.nf/reels.json"
 
-# Original URLs
-url1 = "http://msmpr.free.nf/profiles.json"
-url2 = "http://msmpr.free.nf/reels.json"
-
-# Headers सेट करें ताकि सर्वर इसे ब्राउज़र रिक्वेस्ट समझे
+# Headers ताकि वेबसाइट JSON भेजे
 headers = {
-    "User-Agent": "Mozilla/5.0"
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Referer": "http://msmpr.free.nf/",
 }
 
-def fetch_json(proxy, url):
-    try:
-        response = requests.get(proxy + url, headers=headers, timeout=10)
-        if response.status_code == 200:
-            return json.loads(response.json()["contents"])  # JSON कंटेंट निकालें
-        else:
-            return {}
-    except Exception as e:
-        print(f"Error fetching {url}: {e}")
-        return {}
+try:
+    # JSON डेटा डाउनलोड करो
+    profiles_data = requests.get(profiles_url, headers=headers).json()
+    reels_data = requests.get(reels_url, headers=headers).json()
 
-# JSON डेटा लोड करें
-data1 = fetch_json(proxy_url, url1)
-data2 = fetch_json(proxy_url, url2)
+    # profiles.json सेव करो
+    with open("profiles.json", "w", encoding="utf-8") as f:
+        json.dump(profiles_data, f, indent=4)
 
-# JSON फाइल सेव करें
-with open("profiles.json", "w") as f1:
-    json.dump(data1, f1)
+    # reels.json सेव करो
+    with open("reels.json", "w", encoding="utf-8") as f:
+        json.dump(reels_data, f, indent=4)
 
-with open("reels.json", "w") as f2:
-    json.dump(data2, f2)
+    print("✅ JSON फाइलें अपडेट हो गईं!")
+
+except Exception as e:
+    print(f"⚠️ Error: {e}")
