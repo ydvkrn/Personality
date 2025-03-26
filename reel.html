@@ -32,6 +32,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            background-color: #000; /* Ensure black background */
         }
 
         video {
@@ -39,6 +40,23 @@
             height: 100%;
             object-fit: cover;
             display: block;
+            background-color: #000; /* Black background for video */
+        }
+
+        .video-loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 18px;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 8px;
         }
 
         .fixed-overlay {
@@ -107,21 +125,10 @@
             opacity: 0;
             transition: opacity 0.5s ease-in-out;
         }
-
-        .loader {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 20px;
-            z-index: 1000;
-        }
     </style>
 </head>
 <body>
     <div id="reels-container"></div>
-    <div class="loader" id="loader">Loading Reels...</div>
     
     <div class="fixed-overlay">
         <img class="profile-pic" id="profile-pic" src="">
@@ -140,7 +147,7 @@
         let isAudioEnabled = localStorage.getItem('audioEnabled') === 'true';
         const AUDIO_PERSISTENCE_DURATION = 30 * 60 * 1000;
         const CACHE_NAME = 'reels-cache-v1';
-        const INITIAL_LOAD_COUNT = 3; // Load only 3 videos initially
+        const INITIAL_LOAD_COUNT = 3;
 
         function setAudioPersistence() {
             localStorage.setItem('audioEnabled', 'true');
@@ -204,7 +211,6 @@
             const usernameText = document.getElementById('username-text');
             const verifyBadge = document.getElementById('verify-badge');
             const title = document.getElementById('title');
-            const loader = document.getElementById('loader');
 
             function getProfileById(id) {
                 return profiles.find(profile => profile.id === id) || { username: "Unknown", profile: "https://example.com/default-profile.jpg", verified: false };
@@ -226,10 +232,25 @@
                     video.src = await fetchAndCache(reel.media) || '';
                     video.autoplay = false;
                     video.playsInline = true;
-                    video.preload = 'metadata';
+                    video.preload = 'auto'; // Preload video for faster buffering
                     video.controls = false;
                     video.muted = true;
                     video.loop = true;
+
+                    const loader = document.createElement('div');
+                    loader.className = 'video-loader';
+                    loader.innerText = 'Buffering...';
+                    div.appendChild(loader);
+
+                    video.addEventListener('canplay', () => {
+                        loader.style.display = 'none'; // Hide loader when video is ready
+                    });
+                    video.addEventListener('waiting', () => {
+                        loader.style.display = 'flex'; // Show loader if buffering
+                    });
+                    video.addEventListener('error', () => {
+                        loader.innerText = 'Error loading video';
+                    });
 
                     video.addEventListener('click', () => {
                         if (!isAudioEnabled) {
@@ -248,7 +269,6 @@
                     container.appendChild(div);
                     video.dataset.index = i;
                 }
-                loader.style.display = 'none'; // Hide loader after initial load
                 enableScrollPlayback();
             }
 
@@ -277,7 +297,6 @@
                             title.innerText = fullTitle;
                             verifyBadge.style.display = profileData.verified ? "inline" : "none";
 
-                            // Load more videos if nearing the end
                             if (index >= container.children.length - 2) {
                                 loadVideos(container.children.length);
                             }
@@ -311,11 +330,11 @@
                 }, 500);
             }
 
-            loadVideos(); // Start loading initial videos
+            loadVideos();
         })
         .catch(error => {
             console.error('Error loading data:', error);
-            document.getElementById('loader').innerText = 'Failed to load reels. Please refresh.';
+            document.getElementById('reels-container').innerHTML = '<div style="color: white; text-align: center; padding-top: 50%;">Failed to load reels. Please refresh.</div>';
         });
     </script>
 </body>
