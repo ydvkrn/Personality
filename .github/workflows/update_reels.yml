@@ -1,0 +1,27 @@
+name: Auto Update reels.txt
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Har ghante chalega
+  workflow_dispatch: # Manual run ke liye
+
+jobs:
+  update-txt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Fetch JSON and Save as TXT
+        run: |
+          curl http://msmpr.free.nf/reels.json -o reels.txt
+          echo "Fetched data and saved to reels.txt:"
+          cat reels.txt # Debugging ke liye content dikhao
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add reels.txt
+          git commit -m "Update reels.txt from msmpr.free.nf - $(date +%s)" || echo "No changes to commit"
+          git push
