@@ -17,9 +17,13 @@ jobs:
         run: |
           curl -o profiles.json --header "User-Agent: Mozilla/5.0" http://msmpr.free.nf/profiles.json
           curl -o reels.json --header "User-Agent: Mozilla/5.0" http://msmpr.free.nf/reels.json
+          cat profiles.json  # JSON डेटा को टर्मिनल में दिखाने के लिए
+          cat reels.json
 
       - name: गिट कमिट और पुश करें
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "actions@github.com"
-          git add
+          git add profiles.json reels.json
+          git commit -m "Updated JSON data" --allow-empty
+          git push
