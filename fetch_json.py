@@ -10,18 +10,27 @@ headers = {
 }
 
 try:
-    # JSON फेच करके प्रिंट करो  
+    # JSON फेच करो  
     profiles_response = requests.get(profiles_url, headers=headers)
     reels_response = requests.get(reels_url, headers=headers)
 
-    print("🔍 Profiles Response:", profiles_response.text[:500])  # सिर्फ 500 कैरेक्टर दिखाओ  
+    print("🔍 Profiles Response:", profiles_response.text[:500])  
     print("🔍 Reels Response:", reels_response.text[:500])  
 
-    # JSON में कन्वर्ट करो  
-    profiles_data = profiles_response.json()
-    reels_data = reels_response.json()
+    # JSON में कन्वर्ट करने की कोशिश करो  
+    try:
+        profiles_data = profiles_response.json()
+    except json.JSONDecodeError:
+        print("⚠️ Profiles JSON सही नहीं है!")
+        profiles_data = {}
 
-    # JSON फाइल सेव करो  
+    try:
+        reels_data = reels_response.json()
+    except json.JSONDecodeError:
+        print("⚠️ Reels JSON सही नहीं है!")
+        reels_data = {}
+
+    # JSON फाइलें सेव करो  
     with open("profiles.json", "w", encoding="utf-8") as f:
         json.dump(profiles_data, f, indent=4)
 
