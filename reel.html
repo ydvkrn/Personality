@@ -139,6 +139,7 @@
 
     <script>
         let fullTitle = "";
+        let hasInteracted = false;
 
         Promise.all([
             fetch('https://raw.githubusercontent.com/ydvkrn/Personality/refs/heads/main/profiles.json').then(res => res.json()),
@@ -168,33 +169,33 @@
                     video.src = reel.media;
                     video.autoplay = false;
                     video.playsInline = true;
-                    video.preload = 'auto'; // Preload full video
+                    video.preload = 'auto';
                     video.controls = false;
                     video.muted = true; // Initially muted
                     video.loop = true;
                     
                     const buffer = document.createElement('div');
                     buffer.className = 'loading-buffer';
-                    buffer.style.display = 'block'; // Show buffer initially
+                    buffer.style.display = 'block';
 
                     video.addEventListener('canplay', () => {
-                        buffer.style.display = 'none'; // Hide buffer when video can play
+                        buffer.style.display = 'none';
                         video.style.display = 'block';
                     });
 
                     video.addEventListener('waiting', () => {
-                        buffer.style.display = 'block'; // Show buffer when video is buffering
+                        buffer.style.display = 'block';
                         video.style.display = 'none';
                     });
 
                     video.addEventListener('playing', () => {
-                        buffer.style.display = 'none'; // Hide buffer when video starts playing
+                        buffer.style.display = 'none';
                         video.style.display = 'block';
                     });
 
                     video.addEventListener('error', (e) => {
                         console.error('Video error:', e);
-                        buffer.style.display = 'block'; // Keep buffer if error occurs
+                        buffer.style.display = 'block';
                         video.style.display = 'none';
                     });
 
@@ -204,7 +205,10 @@
 
                     video.dataset.index = index;
 
-                    video.addEventListener('dblclick', (e) => showLikeAnimation(div, e));
+                    video.addEventListener('dblclick', (e) => {
+                        hasInteracted = true;
+                        showLikeAnimation(div, e);
+                    });
                 });
 
                 enableScrollPlayback();
@@ -218,10 +222,10 @@
 
                         if (entry.isIntersecting) {
                             video.play().then(() => {
-                                video.muted = false; // Unmute after play starts
+                                video.muted = false; // Unmute after user interaction or simulated interaction
                             }).catch(error => {
                                 console.log("Play error:", error);
-                                video.muted = true; // Keep muted if play fails
+                                video.muted = true;
                             });
 
                             let profileData = getProfileById(reels[index].id);
@@ -242,15 +246,42 @@
                 let observer = new IntersectionObserver(handleVideoPlayback, { threshold: 0.6 });
                 document.querySelectorAll("video").forEach(video => observer.observe(video));
 
-                // Play first video manually
+                // Simulate user interaction for first video
                 const firstVideo = document.querySelector('video');
                 if (firstVideo) {
-                    firstVideo.play().then(() => {
-                        setTimeout(() => {
-                            firstVideo.muted = false;
-                        }, 100);
-                    }).catch(error => console.log("First video play error:", error));
+                    // Create a dummy click event to simulate user interaction
+                    const simulateInteraction = () => {
+                        const event = new Event('click', { bubbles: true });
+                        document.body.dispatchEvent(event);
+                        hasInteracted = true;
+                        firstVideo.play().then(() => {
+                            firstVideo.muted = false; // Unmute after simulated interaction
+                        }).catch(error => console.log("First video play error:", error));
+                    };
+
+                    // Wait for page load to simulate interaction
+                    window.addEventListener('load', simulateInteraction);
+
+                    // Fallback: If simulated interaction fails, play muted
+                    firstVideo.play().catch(error => {
+                        console.log("First video play error (muted fallback):", error);
+                        firstVideo.muted = true;
+                    });
                 }
+
+                // Detect real user interaction
+                let touchStartY = 0;
+                window.addEventListener('touchstart', (event) => {
+                    touchStartY = event.touches[0].clientY;
+                }, { passive: true });
+
+                window.addEventListener('touchmove', (event) => {
+                    const touchEndY = event.touches[0].clientY;
+                    const deltaY = touchStartY - touchEndY;
+                    if (Math.abs(deltaY) > 10) {
+                        hasInteracted = true;
+                    }
+                }, { passive: true });
             }
 
             function showFullTitle() {
