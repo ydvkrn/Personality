@@ -130,7 +130,7 @@
         <div class="user-info">
             <div class="username" id="username">
                 <span id="username-text">Loading...</span>
-                <img class="verify-badge" id="verify-badge" src="https://i.postimg.cc/nr5sZRd3/1000062918-removebg-preview.png" style="display: none;">
+                <img class="verify-badge" id="verify-badge" src="https://i.postimg.cc/J0fgKwmW/instagram-verification-badge.png" style="display: none;">
             </div>
         </div>
     </div>
@@ -166,27 +166,36 @@
 
                     const video = document.createElement('video');
                     video.src = reel.media;
-                    video.autoplay = false; // Autoplay off initially
+                    video.autoplay = false;
                     video.playsInline = true;
-                    video.preload = 'metadata';
+                    video.preload = 'auto'; // Preload full video
                     video.controls = false;
                     video.muted = true; // Initially muted
                     video.loop = true;
                     
                     const buffer = document.createElement('div');
                     buffer.className = 'loading-buffer';
+                    buffer.style.display = 'block'; // Show buffer initially
 
-                    video.addEventListener('loadeddata', () => {
+                    video.addEventListener('canplay', () => {
+                        buffer.style.display = 'none'; // Hide buffer when video can play
                         video.style.display = 'block';
-                        buffer.style.display = 'none';
                     });
 
                     video.addEventListener('waiting', () => {
-                        buffer.style.display = 'block';
+                        buffer.style.display = 'block'; // Show buffer when video is buffering
+                        video.style.display = 'none';
                     });
 
                     video.addEventListener('playing', () => {
-                        buffer.style.display = 'none';
+                        buffer.style.display = 'none'; // Hide buffer when video starts playing
+                        video.style.display = 'block';
+                    });
+
+                    video.addEventListener('error', (e) => {
+                        console.error('Video error:', e);
+                        buffer.style.display = 'block'; // Keep buffer if error occurs
+                        video.style.display = 'none';
                     });
 
                     div.appendChild(video);
@@ -210,7 +219,10 @@
                         if (entry.isIntersecting) {
                             video.play().then(() => {
                                 video.muted = false; // Unmute after play starts
-                            }).catch(error => console.log("Play error:", error));
+                            }).catch(error => {
+                                console.log("Play error:", error);
+                                video.muted = true; // Keep muted if play fails
+                            });
 
                             let profileData = getProfileById(reels[index].id);
                             profilePic.src = profileData.profile;
@@ -222,15 +234,15 @@
                         } else {
                             video.pause();
                             video.muted = true;
-                            video.currentTime = 0; // Reset to start
+                            video.currentTime = 0;
                         }
                     });
                 }
 
-                let observer = new IntersectionObserver(handleVideoPlayback, { threshold: 0.6 }); // Reduced threshold for better mobile performance
+                let observer = new IntersectionObserver(handleVideoPlayback, { threshold: 0.6 });
                 document.querySelectorAll("video").forEach(video => observer.observe(video));
 
-                // Play first video manually to bypass initial block
+                // Play first video manually
                 const firstVideo = document.querySelector('video');
                 if (firstVideo) {
                     firstVideo.play().then(() => {
