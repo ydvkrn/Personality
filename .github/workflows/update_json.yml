@@ -1,6 +1,30 @@
-- name: JSON डेटा डाउनलोड करें (Custom Headers)
+name: Update JSON Files
+
+on:
+  schedule:
+    - cron: "*/1 * * * *"  # हर 1 मिनट में रन करेगा
+  workflow_dispatch:
+
+jobs:
+  update-json:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: GitHub Repository Clone करो
+        uses: actions/checkout@v3
+
+      - name: Python Install करो
         run: |
-          curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" -b "cookie_name=cookie_value" -o profiles.json "http://msmpr.free.nf/profiles.json"
-          curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" -b "cookie_name=cookie_value" -o reels.json "http://msmpr.free.nf/reels.json"
-          cat profiles.json
-          cat reels.json
+          sudo apt update
+          sudo apt install python3 python3-pip -y
+
+      - name: JSON डेटा डाउनलोड करो
+        run: python3 fetch_json.py
+
+      - name: गिट कमिट और पुश करो
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          git add profiles.json reels.json
+          git commit -m "Updated JSON data" --allow-empty
+          git push
