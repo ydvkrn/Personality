@@ -166,11 +166,11 @@
 
                     const video = document.createElement('video');
                     video.src = reel.media;
-                    video.autoplay = true;
+                    video.autoplay = false; // Autoplay off initially
                     video.playsInline = true;
                     video.preload = 'metadata';
                     video.controls = false;
-                    video.muted = false;
+                    video.muted = true; // Initially muted
                     video.loop = true;
                     
                     const buffer = document.createElement('div');
@@ -208,7 +208,9 @@
                         let index = video.dataset.index;
 
                         if (entry.isIntersecting) {
-                            video.play().catch(error => console.log("Play error:", error));
+                            video.play().then(() => {
+                                video.muted = false; // Unmute after play starts
+                            }).catch(error => console.log("Play error:", error));
 
                             let profileData = getProfileById(reels[index].id);
                             profilePic.src = profileData.profile;
@@ -219,12 +221,24 @@
                             verifyBadge.style.display = profileData.verified ? "inline" : "none";
                         } else {
                             video.pause();
+                            video.muted = true;
+                            video.currentTime = 0; // Reset to start
                         }
                     });
                 }
 
-                let observer = new IntersectionObserver(handleVideoPlayback, { threshold: 0.8 });
+                let observer = new IntersectionObserver(handleVideoPlayback, { threshold: 0.6 }); // Reduced threshold for better mobile performance
                 document.querySelectorAll("video").forEach(video => observer.observe(video));
+
+                // Play first video manually to bypass initial block
+                const firstVideo = document.querySelector('video');
+                if (firstVideo) {
+                    firstVideo.play().then(() => {
+                        setTimeout(() => {
+                            firstVideo.muted = false;
+                        }, 100);
+                    }).catch(error => console.log("First video play error:", error));
+                }
             }
 
             function showFullTitle() {
