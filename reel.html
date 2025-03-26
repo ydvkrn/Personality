@@ -107,10 +107,21 @@
             opacity: 0;
             transition: opacity 0.5s ease-in-out;
         }
+
+        .loader {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 20px;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
     <div id="reels-container"></div>
+    <div class="loader" id="loader">Loading Reels...</div>
     
     <div class="fixed-overlay">
         <img class="profile-pic" id="profile-pic" src="">
@@ -129,6 +140,7 @@
         let isAudioEnabled = localStorage.getItem('audioEnabled') === 'true';
         const AUDIO_PERSISTENCE_DURATION = 30 * 60 * 1000;
         const CACHE_NAME = 'reels-cache-v1';
+        const INITIAL_LOAD_COUNT = 3; // Load only 3 videos initially
 
         function setAudioPersistence() {
             localStorage.setItem('audioEnabled', 'true');
@@ -149,26 +161,27 @@
             localStorage.removeItem('audioTimestamp');
         }
 
-        // Function to fetch and cache media
         async function fetchAndCache(url) {
-            const cache = await caches.open(CACHE_NAME);
-            const cachedResponse = await cache.match(url);
-            if (cachedResponse) {
-                return cachedResponse.url;
-            }
+            try {
+                const cache = await caches.open(CACHE_NAME);
+                const cachedResponse = await cache.match(url);
+                if (cachedResponse) return cachedResponse.url;
 
-            const response = await fetch(url);
-            if (response.ok) {
-                await cache.put(url, response.clone());
-                return url;
+                const response = await fetch(url, { mode: 'cors' });
+                if (response.ok) {
+                    await cache.put(url, response.clone());
+                    return url;
+                }
+                return null;
+            } catch (error) {
+                console.error(`Cache fetch failed for ${url}:`, error);
+                return null;
             }
-            throw new Error('Invalid response');
         }
 
-        // Check if video URL is valid
         async function isValidVideoUrl(url) {
             try {
-                const response = await fetch(url, { method: 'HEAD' });
+                const response = await fetch(url, { method: 'HEAD', mode: 'cors' });
                 return response.ok;
             } catch {
                 return false;
@@ -176,26 +189,30 @@
         }
 
         Promise.all([
-            fetch('https://raw.githubusercontent.com/ydvkrn/Personality/refs/heads/main/profiles.json').then(res => res.json()),
-            fetch('https://raw.githubusercontent.com/ydvkrn/Personality/refs/heads/main/reels.json').then(res => res.json())
+            fetch('https://raw.githubusercontent.com/ydvkrn/Personality/refs/heads/main/profiles.json')
+                .then(res => res.ok ? res.json() : Promise.reject('Profiles fetch failed'))
+                .catch(() => ({ profiles: [] })),
+            fetch('https://raw.githubusercontent.com/ydvkrn/Personality/refs/heads/main/reels.json')
+                .then(res => res.ok ? res.json() : Promise.reject('Reels fetch failed'))
+                .catch(() => ({ reels: [] }))
         ])
         .then(([profilesData, reelsData]) => {
-            let profiles = profilesData.profiles;
-            let reels = reelsData.reels;
-
+            let profiles = profilesData.profiles || [];
+            let reels = reelsData.reels || [];
             const container = document.getElementById('reels-container');
             const profilePic = document.getElementById('profile-pic');
             const usernameText = document.getElementById('username-text');
             const verifyBadge = document.getElementById('verify-badge');
             const title = document.getElementById('title');
+            const loader = document.getElementById('loader');
 
             function getProfileById(id) {
                 return profiles.find(profile => profile.id === id) || { username: "Unknown", profile: "https://example.com/default-profile.jpg", verified: false };
             }
 
-            async function loadVideos() {
-                container.innerHTML = "";
-                for (const [index, reel] of reels.entries()) {
+            async function loadVideos(startIndex = 0, count = INITIAL_LOAD_COUNT) {
+                for (let i = startIndex; i < Math.min(startIndex + count, reels.length); i++) {
+                    const reel = reels[i];
                     const isValid = await isValidVideoUrl(reel.media);
                     if (!isValid) {
                         console.log(`Skipping invalid/expired video: ${reel.media}`);
@@ -206,12 +223,12 @@
                     div.className = 'video-container';
 
                     const video = document.createElement('video');
-                    video.src = await fetchAndCache(reel.media);
-                    video.autoplay = false; // No autoplay on load
+                    video.src = await fetchAndCache(reel.media) || '';
+                    video.autoplay = false;
                     video.playsInline = true;
                     video.preload = 'metadata';
                     video.controls = false;
-                    video.muted = true; // Start muted until clicked
+                    video.muted = true;
                     video.loop = true;
 
                     video.addEventListener('click', () => {
@@ -229,19 +246,18 @@
 
                     div.appendChild(video);
                     container.appendChild(div);
-                    video.dataset.index = index;
+                    video.dataset.index = i;
                 }
-
+                loader.style.display = 'none'; // Hide loader after initial load
                 enableScrollPlayback();
             }
 
             function enableScrollPlayback() {
                 let currentVideo = null;
-
-                function handleVideoPlayback(entries) {
+                let observer = new IntersectionObserver((entries) => {
                     entries.forEach(entry => {
-                        let video = entry.target;
-                        let index = parseInt(video.dataset.index);
+                        const video = entry.target;
+                        const index = parseInt(video.dataset.index);
 
                         if (entry.isIntersecting) {
                             if (currentVideo && currentVideo !== video) {
@@ -249,36 +265,30 @@
                                 currentVideo.currentTime = 0;
                             }
                             currentVideo = video;
-                            // Only play first video when in view, no auto-unmute
-                            if (!isAudioEnabled) {
-                                video.muted = true;
-                            } else {
-                                video.muted = false;
-                            }
-                            video.play().catch(error => {
-                                console.log("Play error:", error);
-                            });
+                            video.muted = !isAudioEnabled;
+                            video.play().catch(error => console.log("Play error:", error));
 
-                            let profileData = getProfileById(reels[index].id);
+                            const profileData = getProfileById(reels[index].id);
                             fetchAndCache(profileData.profile).then(cachedUrl => {
-                                profilePic.src = "";
-                                profilePic.src = cachedUrl;
-                            }).catch(() => {
-                                profilePic.src = "https://example.com/default-profile.jpg";
+                                profilePic.src = cachedUrl || "https://example.com/default-profile.jpg";
                             });
                             usernameText.innerText = profileData.username;
                             fullTitle = reels[index].title;
                             title.innerText = fullTitle;
                             verifyBadge.style.display = profileData.verified ? "inline" : "none";
+
+                            // Load more videos if nearing the end
+                            if (index >= container.children.length - 2) {
+                                loadVideos(container.children.length);
+                            }
                         } else if (video === currentVideo) {
                             video.pause();
                             video.currentTime = 0;
                             currentVideo = null;
                         }
                     });
-                }
+                }, { threshold: 0.9 });
 
-                let observer = new IntersectionObserver(handleVideoPlayback, { threshold: 0.9 });
                 document.querySelectorAll("video").forEach(video => observer.observe(video));
             }
 
@@ -290,7 +300,6 @@
                 const heart = document.createElement('img');
                 heart.src = "https://png.pngtree.com/png-vector/20220428/ourmid/pngtree-smooth-glossy-heart-vector-file-ai-and-png-png-image_4557871.png";
                 heart.className = 'like-animation';
-                heart.style.position = 'absolute';
                 heart.style.left = `${event.clientX - 40}px`;
                 heart.style.top = `${event.clientY - 40}px`;
                 heart.style.opacity = 1;
@@ -302,9 +311,12 @@
                 }, 500);
             }
 
-            loadVideos();
+            loadVideos(); // Start loading initial videos
         })
-        .catch(error => console.error('Error loading data:', error));
+        .catch(error => {
+            console.error('Error loading data:', error);
+            document.getElementById('loader').innerText = 'Failed to load reels. Please refresh.';
+        });
     </script>
 </body>
 </html>
