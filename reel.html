@@ -10,12 +10,13 @@
             padding: 0;
             height: 100%;
             overflow: hidden;
+            background-color: #000;
         }
         body {
-            overflow-y: scroll;
+            overflow-y: auto;
             scroll-snap-type: y mandatory;
-            background-color: #000;
-            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
         }
         .video-container {
             position: relative;
@@ -30,23 +31,19 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            pointer-events: none;
+            pointer-events: auto;
         }
-        .start-button {
+        .like-animation {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            padding: 15px 30px;
-            font-size: 20px;
-            background-color: #fff;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
+            width: 100px;
+            height: 100px;
+            pointer-events: none;
             z-index: 10;
+            animation: fadeOut 1s ease forwards;
         }
-        .hidden {
-            display: none;
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(1.5); }
         }
     </style>
 </head>
@@ -54,94 +51,174 @@
     <div id="reels-container"></div>
 
     <script>
-        fetch('https://raw.githubusercontent.com/ydvkrn/Personality/refs/heads/main/data.json')
+        fetch('https://raw.githubusercontent.com/ydvkrn/Personality/refs/heads/main/reels.json') // Line 57 - Tera link yahan daal diya
             .then(response => {
                 if (!response.ok) throw new Error('Network response was not ok');
                 return response.json();
             })
             .then(data => {
-                const reels = data.content.mediaItems.find(item => item.name === "Reel Of The Day").reels;
+                const reels = data.reels;
                 const container = document.getElementById('reels-container');
+                let playedVideos = new Set();
+                let videoOrder = [];
+                let activeIndex = 0;
 
-                reels.forEach((reel, index) => {
+                const shuffleArray = (array) => array.sort(() => Math.random() - 0.5);
+                videoOrder = shuffleArray([...reels]);
+
+                videoOrder.forEach((reel, index) => {
                     const div = document.createElement('div');
                     div.className = 'video-container';
                     div.id = `reel${index}`;
-
-                    const button = document.createElement('button');
-                    button.className = 'start-button';
-                    button.textContent = 'Start';
-                    button.onclick = () => playVideo(index);
 
                     const video = document.createElement('video');
                     video.id = `video${index}`;
                     video.src = reel.media;
                     video.muted = true;
+                    video.loop = false;
+                    video.playsInline = true;
                     video.preload = 'auto';
 
-                    div.appendChild(button);
                     div.appendChild(video);
                     container.appendChild(div);
+
+                    video.addEventListener('dblclick', (event) => {
+                        const rect = video.getBoundingClientRect();
+                        const x = event.clientX - rect.left;
+                        const y = event.clientY - rect.top;
+
+                        const likeImg = document.createElement('img');
+                        likeImg.src = 'https://i.postimg.cc/QxNJKcCm/5bc5f0d4-5be6-4b5d-9fa7-52049e9890b2.gif';
+                        likeImg.className = 'like-animation';
+                        likeImg.style.left = `${x - 50}px`;
+                        likeImg.style.top = `${y - 50}px`;
+                        div.appendChild(likeImg);
+
+                        setTimeout(() => likeImg.remove(), 1000);
+                    });
                 });
 
-                let activeIndex = -1; // No video active initially
-                let lastScrollTop = 0;
+                function playCurrentVideo() {
+                    document.querySelectorAll('.video-container video').forEach((vid, index) => {
+                        if (index === activeIndex) {
+                            vid.muted = false;
+                            vid.play().catch(err => console.error('Play failed:', err));
+                            playedVideos.add(videoOrder[index].id);
+                        } else {
+                            vid.pause();
+                            vid.muted = true;
+                            vid.currentTime = 0;
+                        }
+                    });
+                }
 
-                // Scroll event for instant switch
-                window.addEventListener('scroll', () => {
-                    const scrollTop = window.scrollY;
-                    const windowHeight = window.innerHeight;
-                    const newIndex = Math.round(scrollTop / windowHeight);
+                let isScrolling = false;
+                let lastScrollTime = 0;
 
-                    if (newIndex !== activeIndex && newIndex >= 0 && newIndex < reels.length) {
-                        playVideo(newIndex);
-                        activeIndex = newIndex;
+                window.addEventListener('wheel', (event) => {
+                    const now = Date.now();
+                    if (isScrolling || now - lastScrollTime < 600) return;
+
+                    isScrolling = true;
+                    lastScrollTime = now;
+
+                    if (event.deltaY > 0 && activeIndex < videoOrder.length - 1) {
+                        activeIndex++;
+                        adjustVideoOrder();
+                    } else if (event.deltaY < 0 && activeIndex > 0) {
+                        activeIndex--;
                     }
-                    lastScrollTop = scrollTop;
+
+                    document.getElementById(`reel${activeIndex}`).scrollIntoView({ behavior: 'smooth' });
+                    playCurrentVideo();
+
+                    setTimeout(() => isScrolling = false, 600);
                 }, { passive: true });
 
-                // Initial video not playing until scrolled or clicked
-                activeIndex = 0; // Set first video as active but not playing yet
-                showVideo(0); // Show first video without playing
+                let touchStartY = 0;
+
+                window.addEventListener('touchstart', (event) => {
+                    touchStartY = event.touches[0].clientY;
+                }, { passive: true });
+
+                window.addEventListener('touchmove', (event) => {
+                    const now = Date.now();
+                    if (isScrolling || now - lastScrollTime < 600) return;
+
+                    const touchEndY = event.touches[0].clientY;
+                    const deltaY = touchStartY - touchEndY;
+
+                    if (deltaY > 50 && activeIndex < videoOrder.length - 1) {
+                        isScrolling = true;
+                        lastScrollTime = now;
+                        activeIndex++;
+                        adjustVideoOrder();
+                        document.getElementById(`reel${activeIndex}`).scrollIntoView({ behavior: 'smooth' });
+                        playCurrentVideo();
+                        setTimeout(() => isScrolling = false, 600);
+                    } else if (deltaY < -50 && activeIndex > 0) {
+                        isScrolling = true;
+                        lastScrollTime = now;
+                        activeIndex--;
+                        document.getElementById(`reel${activeIndex}`).scrollIntoView({ behavior: 'smooth' });
+                        playCurrentVideo();
+                        setTimeout(() => isScrolling = false, 600);
+                    }
+                }, { passive: false });
+
+                function adjustVideoOrder() {
+                    if (activeIndex === videoOrder.length - 1 && playedVideos.size < reels.length) {
+                        const unplayed = reels.filter(r => !playedVideos.has(r.id));
+                        if (unplayed.length > 0) {
+                            videoOrder.push(unplayed[Math.floor(Math.random() * unplayed.length)]);
+                            updateVideoElements();
+                        }
+                    }
+                }
+
+                function updateVideoElements() {
+                    const containers = document.querySelectorAll('.video-container');
+                    videoOrder.forEach((reel, index) => {
+                        if (index >= containers.length) {
+                            const div = document.createElement('div');
+                            div.className = 'video-container';
+                            div.id = `reel${index}`;
+                            const video = document.createElement('video');
+                            video.id = `video${index}`;
+                            video.src = reel.media;
+                            video.muted = true;
+                            video.loop = false;
+                            video.playsInline = true;
+                            video.preload = 'auto';
+                            div.appendChild(video);
+                            container.appendChild(div);
+
+                            video.addEventListener('dblclick', (event) => {
+                                const rect = video.getBoundingClientRect();
+                                const x = event.clientX - rect.left;
+                                const y = event.clientY - rect.top;
+
+                                const likeImg = document.createElement('img');
+                                likeImg.src = 'https://i.postimg.cc/QxNJKcCm/5bc5f0d4-5be6-4b5d-9fa7-52049e9890b2.gif';
+                                likeImg.className = 'like-animation';
+                                likeImg.style.left = `${x - 50}px`;
+                                likeImg.style.top = `${y - 50}px`;
+                                div.appendChild(likeImg);
+
+                                setTimeout(() => likeImg.remove(), 1000);
+                            });
+                        }
+                    });
+                }
+
+                const firstVideo = document.getElementById('video0');
+                firstVideo.play().then(() => {
+                    setTimeout(() => {
+                        firstVideo.muted = false;
+                    }, 100);
+                }).catch(err => console.error('First video play failed:', err));
             })
-            .catch(error => {
-                console.error('Error fetching JSON:', error);
-                document.body.innerHTML = '<p style="color: white; text-align: center;">Error loading reels.</p>';
-            });
-
-        function showVideo(index) {
-            const allContainers = document.querySelectorAll('.video-container');
-            allContainers.forEach((container, i) => {
-                if (i === index) {
-                    container.classList.remove('hidden');
-                } else {
-                    container.classList.add('hidden');
-                }
-            });
-        }
-
-        function playVideo(index) {
-            const allContainers = document.querySelectorAll('.video-container');
-            allContainers.forEach((container, i) => {
-                const video = container.querySelector('video');
-                const button = container.querySelector('.start-button');
-                if (i === index) {
-                    container.classList.remove('hidden');
-                    button.style.display = 'none';
-                    video.muted = false;
-                    video.play().catch(err => console.error('Video play failed:', err));
-                } else {
-                    video.pause();
-                    video.muted = true;
-                    video.currentTime = 0;
-                    container.classList.add('hidden');
-                    button.style.display = 'block'; // Reset button for next time
-                }
-            });
-
-            const container = document.getElementById(`reel${index}`);
-            window.scrollTo({ top: container.offsetTop, behavior: 'smooth' });
-        }
+            .catch(error => console.error('Error loading reels:', error));
     </script>
 </body>
 </html>
