@@ -1,0 +1,119 @@
+name: Auto Update JSON Files from InfinityFree
+
+on:
+  schedule:
+    - cron: '0,15,30,45 * * * * *' # Runs at 0th, 15th, 30th, and 45th second of every minute
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  update-json-0:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 * * * * *' # Runs at 0th second
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Fetch reels.json from InfinityFree
+        run: |
+          curl -o reels.json http://msmpr.free.nf/reels.json
+
+      - name: Fetch profiles.json from InfinityFree
+        run: |
+          curl -o profiles.json http://msmpr.free.nf/profiles.json
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+
+      - name: Commit and Push Changes
+        run: |
+          git add reels.json profiles.json
+          git commit -m "Auto-update JSON files from InfinityFree (0th second)" || echo "No changes to commit"
+          git push origin main
+
+  update-json-15:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '15 * * * * *' # Runs at 15th second
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Fetch reels.json from InfinityFree
+        run: |
+          curl -o reels.json http://msmpr.free.nf/reels.json
+
+      - name: Fetch profiles.json from InfinityFree
+        run: |
+          curl -o profiles.json http://msmpr.free.nf/profiles.json
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+
+      - name: Commit and Push Changes
+        run: |
+          git add reels.json profiles.json
+          git commit -m "Auto-update JSON files from InfinityFree (15th second)" || echo "No changes to commit"
+          git push origin main
+
+  update-json-30:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '30 * * * * *' # Runs at 30th second
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Fetch reels.json from InfinityFree
+        run: |
+          curl -o reels.json http://msmpr.free.nf/reels.json
+
+      - name: Fetch profiles.json from InfinityFree
+        run: |
+          curl -o profiles.json http://msmpr.free.nf/profiles.json
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+
+      - name: Commit and Push Changes
+        run: |
+          git add reels.json profiles.json
+          git commit -m "Auto-update JSON files from InfinityFree (30th second)" || echo "No changes to commit"
+          git push origin main
+
+  update-json-45:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '45 * * * * *' # Runs at 45th second
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Fetch reels.json from InfinityFree
+        run: |
+          curl -o reels.json http://msmpr.free.nf/reels.json
+
+      - name: Fetch profiles.json from InfinityFree
+        run: |
+          curl -o profiles.json http://msmpr.free.nf/profiles.json
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+
+      - name: Commit and Push Changes
+        run: |
+          git add reels.json profiles.json
+          git commit -m "Auto-update JSON files from InfinityFree (45th second)" || echo "No changes to commit"
+          git push origin main
