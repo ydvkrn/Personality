@@ -1,24 +1,32 @@
-name: Auto Update JSON Files from InfinityFree
+name: Update JSON Files Every Minute
+
 on:
   schedule:
-    - cron: '*/1 * * * *' # Every 1 minute
-  workflow_dispatch:
+    - cron: '* * * * *'  # ⏳ हर मिनट अपडेट होगा
+  workflow_dispatch:  # मैन्युअली रन करने का ऑप्शन
+
 jobs:
   update-json:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
-          fetch-depth: 0
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
+          node-version: '18'
+
       - name: Install dependencies
-        run: pip install requests
-      - name: Run Python script
-        run: python update_json.py
-      - name: Set up Git
+        run: npm install axios fs
+
+      - name: Run update script
+        run: node update-json.js
+
+      - name: Commit and push changes
         run: |
-          git config --global user.name "GitHub Action"
-          git config --global user.email "action@github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add 1m.json 2m.json
+          git commit -m "Auto-update JSON files" || echo "No changes to commit"
+          git push
