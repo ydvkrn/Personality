@@ -30,7 +30,20 @@
       {
         "name": "Reel Of The Day",
         "link": "reel.html",
-        "media": "https://res.cloudinary.com/dohrsxrnr/video/upload/v1742946525/k30qub9sodfffalrbaby.mp4"
+        "reels": [
+          {
+            "title": "Bill",
+            "media": "https://res.cloudinary.com/dohrsxrnr/video/upload/v1742946525/k30qub9sodfffalrbaby.mp4"
+          },
+          {
+            "title": "Negetive",
+            "media": "https://res.cloudinary.com/dohrsxrnr/video/upload/v1742947436/rp3ptutnkdryauassrpj.mp4"  // Placeholder, aap apna video URL dal sakte hain
+          },
+          {
+            "title": "Reel 3",
+            "media": "https://res.cloudinary.com/dohrsxrnr/video/upload/v1742948038/oxytd6fmzyci2rosocxd.mp4"  // Placeholder, aap apna video URL dal sakte hain
+          }
+        ]
       }
     ]
   }
