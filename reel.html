@@ -153,8 +153,8 @@
         });
 
         Promise.all([
-            fetch('https://raw.githubusercontent.com/ydvkrn/Personality/refs/heads/main/profiles.json').then(res => res.json()),
-            fetch('https://raw.githubusercontent.com/ydvkrn/Personality/refs/heads/main/reels.json').then(res => res.json())
+            fetch('http://msmpr.free.nf/profiles.json').then(res => res.json()),
+            fetch('http://msmpr.free.nf/reels.json').then(res => res.json())
         ])
         .then(([profilesData, reelsData]) => {
             let profiles = profilesData.profiles;
