@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warning</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            margin: 0;
+            overflow: hidden;
+        }
+        .center-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+        }
+        .shine-text {
+            color: white;
+            font-style: italic;
+            font-family: 'Courier New', Courier, monospace;
+            text-shadow: 0px 0px 10px rgba(0,0,0,0.7);
+        }
+        .timer {
+            font-size: 4rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0px 0px 10px rgba(0,0,0,0.7);
+            margin-top: 20px;
+        }
+        .continue-btn {
+            background-color: transparent;
+            color: white;
+            padding: 10px 20px;
+            font-size: 1.25rem;
+            font-family: sans-serif;
+            cursor: pointer;
+            border: 3px solid white;
+            border-radius: 10px;
+            margin-top: 30px;
+            display: none;
+            font-weight: bold;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .continue-btn:hover {
+            background-color: white;
+            color: black;
+        }
+        .content-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow-y: auto; /* Scroll enable */
+            padding-top: 50px;
+        }
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            width: 100%;
+            max-width: 500px;
+            margin-top: 20px;
+        }
+        .video-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="center-container" id="start-screen">
+        <img id="warning-img" src="" alt="Warning animation" class="rounded-lg shadow-lg">
+        <div id="timer" class="timer">3</div>
+        <button id="continue-btn" class="continue-btn">Enter</button>
+    </div>
+
+    <div id="main-content" class="hidden content-container"></div>
+
+    <script>
+        fetch('data.json')
+            .then(response => response.json())
+            .then(data => {
+                document.body.style.backgroundImage = `url('${data.content.backgroundImage}')`;
+                document.getElementById("warning-img").src = data.content.warningImage;
+
+                let countdown = 3;
+                const timerElement = document.getElementById("timer");
+                const continueBtn = document.getElementById("continue-btn");
+                const startScreen = document.getElementById("start-screen");
+                const mainContent = document.getElementById("main-content");
+
+                const timerInterval = setInterval(() => {
+                    countdown--;
+                    timerElement.textContent = countdown;
+                    if (countdown <= 0) {
+                        clearInterval(timerInterval);
+                        timerElement.style.display = "none";
+                        continueBtn.style.display = "block";
+                    }
+                }, 1000);
+
+                continueBtn.addEventListener("click", () => {
+                    startScreen.style.display = "none";
+                    mainContent.classList.remove("hidden");
+
+                    mainContent.innerHTML = `
+                        <div class='text-center'>
+                            <h1 class='text-4xl font-extrabold shine-text'>${data.content.welcomeText}</h1>
+                            <h2 class='text-5xl font-extrabold shine-text'>${data.content.mainTitle}</h2>
+                            <p class='text-lg italic shine-text'>${data.content.subtitle}</p>
+                        </div>
+                        <div class='video-grid' id='video-grid'></div>
+                    `;
+
+                    const videoGrid = document.getElementById('video-grid');
+
+                    data.content.mediaItems.forEach(item => {
+                        let mediaElement;
+
+                        // "Reel Of The Day" ke liye special handling
+                        if (item.name === "Reel Of The Day" && item.reels && item.reels.length > 0) {
+                            mediaElement = `
+                                <video class='w-64 h-64 object-cover rounded-lg mb-2' muted loop>
+                                    <source src='${item.reels[0].media}' type='video/mp4'>
+                                    Your browser does not support the video tag.
+                                </video>
+                            `;
+                        } else {
+                            // Baaki items ke liye original logic
+                            const isVideo = item.media.toLowerCase().endsWith(".mp4") || 
+                                            item.media.toLowerCase().endsWith(".webm") || 
+                                            item.media.toLowerCase().endsWith(".mov");
+
+                            mediaElement = isVideo ?
+                                `<video class='w-64 h-64 object-cover rounded-lg mb-2' autoplay muted loop>
+                                    <source src='${item.media}' type='video/mp4'>
+                                    Your browser does not support the video tag.
+                                </video>` :
+                                `<img src='${item.media}' alt='${item.name} preview' class='w-64 h-64 object-cover rounded-lg mb-2'>`;
+                        }
+
+                        videoGrid.innerHTML += `
+                            <div class='video-item'>
+                                <a href='${item.link}'>
+                                    ${mediaElement}
+                                </a>
+                                <p class='font-semibold text-2xl shine-text'>${item.name}</p>
+                            </div>
+                        `;
+                    });
+
+                    const audio = new Audio(data.content.audio);
+                    audio.loop = true;
+                    audio.play().catch(err => console.log("Audio failed to play:", err));
+                });
+            })
+            .catch(err => {
+                console.error("Failed to load JSON:", err);
+                document.getElementById("main-content").innerHTML = `<p class='shine-text'>Error loading content. Check console.</p>`;
+            });
+    </script>
+</body>
+</html>
