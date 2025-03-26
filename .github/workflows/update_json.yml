@@ -2,8 +2,8 @@ name: Update JSON Files
 
 on:
   schedule:
-    - cron: "*/1 * * * *"  # हर 1 मिनट में रन करेगा
-  workflow_dispatch:
+    - cron: "*/1 * * * *"  # हर 1 मिनट में ऑटोमैटिक अपडेट
+  workflow_dispatch:  # मैन्युअली रन करने के लिए
 
 jobs:
   update-json:
