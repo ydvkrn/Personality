@@ -2,7 +2,7 @@ name: Update JSON files every minute
 
 on:
   schedule:
-    - cron: "*/1 * * * *"  # हर 1 मिनट में रन होगा
+    - cron: "*/1 * * * *"  # हर 1 मिनट में अपडेट होगा
   workflow_dispatch:
 
 jobs:
@@ -10,35 +10,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: रिपॉज़िटरी को क्लोन करें
+      - name: रिपॉजिटरी को क्लोन करें
         uses: actions/checkout@v3
 
-      - name: JSON डेटा डाउनलोड करें (Python)
+      - name: JSON डेटा डाउनलोड करें
         run: |
-          python -c "
-          import requests;
-          import json;
-          headers = {'User-Agent': 'Mozilla/5.0'};
-          url1 = 'http://msmpr.free.nf/profiles.json';
-          url2 = 'http://msmpr.free.nf/reels.json';
-          try:
-              response1 = requests.get(url1, headers=headers, timeout=10)
-              data1 = response1.json() if response1.status_code == 200 else {}
-          except:
-              data1 = {}
-          try:
-              response2 = requests.get(url2, headers=headers, timeout=10)
-              data2 = response2.json() if response2.status_code == 200 else {}
-          except:
-              data2 = {}
-          with open('profiles.json', 'w') as f1:
-              json.dump(data1, f1)
-          with open('reels.json', 'w') as f2:
-              json.dump(data2, f2)
-          "
+          curl -o profiles.json --header "User-Agent: Mozilla/5.0" http://msmpr.free.nf/profiles.json
+          curl -o reels.json --header "User-Agent: Mozilla/5.0" http://msmpr.free.nf/reels.json
 
       - name: गिट कमिट और पुश करें
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          git config --global user
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          git add
