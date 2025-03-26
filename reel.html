@@ -143,8 +143,9 @@
     <script>
         let fullTitle = "";
         let hasInteracted = false;
+        let isAudioEnabled = false; // Track if audio has been enabled
 
-        // Simulate user interaction on load
+        // Simulate user interaction on load (may not work for audio in all browsers)
         window.addEventListener('load', () => {
             const event = new Event('click', { bubbles: true });
             document.body.dispatchEvent(event);
@@ -181,11 +182,22 @@
                     video.playsInline = true;
                     video.preload = 'metadata';
                     video.controls = false;
-                    video.muted = false;
+                    video.muted = !isAudioEnabled; // Mute by default until user interacts
                     video.loop = true;
 
                     const buffer = document.createElement('div');
                     buffer.className = 'loading-buffer';
+
+                    // Add click event to unmute on first click
+                    video.addEventListener('click', () => {
+                        if (!isAudioEnabled) {
+                            isAudioEnabled = true; // Set global audio state
+                            // Unmute all videos
+                            document.querySelectorAll('video').forEach(v => {
+                                v.muted = false;
+                            });
+                        }
+                    });
 
                     video.addEventListener('loadedmetadata', () => {
                         video.play().catch(error => {
@@ -222,6 +234,7 @@
                         let index = video.dataset.index;
 
                         if (entry.isIntersecting) {
+                            video.muted = !isAudioEnabled; // Set mute state based on interaction
                             video.play().catch(error => {
                                 console.log("Play error:", error);
                                 video.muted = true;
