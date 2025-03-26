@@ -1,29 +1,6 @@
-name: Update JSON files every minute
-
-on:
-  schedule:
-    - cron: "*/1 * * * *"  # हर 1 मिनट में अपडेट होगा
-  workflow_dispatch:
-
-jobs:
-  update-json:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: रिपॉजिटरी को क्लोन करें
-        uses: actions/checkout@v3
-
-      - name: JSON डेटा डाउनलोड करें
+- name: JSON डेटा डाउनलोड करें (Bypass JavaScript Challenge)
         run: |
-          curl -o profiles.json --header "User-Agent: Mozilla/5.0" http://msmpr.free.nf/profiles.json
-          curl -o reels.json --header "User-Agent: Mozilla/5.0" http://msmpr.free.nf/reels.json
-          cat profiles.json  # JSON डेटा को टर्मिनल में दिखाने के लिए
+          curl -o profiles.json "https://api.allorigins.win/raw?url=http://msmpr.free.nf/profiles.json"
+          curl -o reels.json "https://api.allorigins.win/raw?url=http://msmpr.free.nf/reels.json"
+          cat profiles.json
           cat reels.json
-
-      - name: गिट कमिट और पुश करें
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "actions@github.com"
-          git add profiles.json reels.json
-          git commit -m "Updated JSON data" --allow-empty
-          git push
