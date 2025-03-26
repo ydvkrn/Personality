@@ -1,0 +1,31 @@
+name: Auto Update JSON Files
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Har ghante chalega (change kar sakte hain)
+  workflow_dispatch: # Manual trigger bhi available rahega
+
+jobs:
+  update-json:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Fetch reels.json
+        run: |
+          curl -o reels.json http://msmpr.free.nf/reels.json
+
+      - name: Fetch profiles.json
+        run: |
+          curl -o profiles.json http://msmpr.free.nf/profiles.json
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add reels.json profiles.json
+          git commit -m "Auto-update JSON files from msmpr.free.nf" || echo "No changes to commit"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
