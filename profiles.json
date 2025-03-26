@@ -11,6 +11,12 @@
       "username": "masoom",
       "profile": "https://res.cloudinary.com/dohrsxrnr/image/upload/v1742956607/Me.webp",
       "verified": true
+    },
+    {
+      "id": "PM",
+      "username": "modi",
+      "profile": "https://i.postimg.cc/6pkHH2PD/image.jpg",
+      "verified": false
     }
   ]
 }
