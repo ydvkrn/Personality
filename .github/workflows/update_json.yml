@@ -3,7 +3,7 @@ name: Update JSON files every minute
 on:
   schedule:
     - cron: "*/1 * * * *"  # हर 1 मिनट में रन होगा
-  workflow_dispatch:  # मैन्युअली भी रन कर सकते हैं
+  workflow_dispatch:
 
 jobs:
   update-json:
@@ -13,15 +13,33 @@ jobs:
       - name: रिपॉज़िटरी को क्लोन करें
         uses: actions/checkout@v3
 
-      - name: JSON डेटा डाउनलोड करें
+      - name: JSON डेटा डाउनलोड करें (Python)
         run: |
-          curl -o profiles.json http://msmpr.free.nf/profiles.json
-          curl -o reels.json http://msmpr.free.nf/reels.json
+          python -c "
+          import requests;
+          import json;
+          url1 = 'http://msmpr.free.nf/profiles.json';
+          url2 = 'http://msmpr.free.nf/reels.json';
+          try:
+              data1 = requests.get(url1, timeout=10).json()
+          except:
+              data1 = {}
+          try:
+              data2 = requests.get(url2, timeout=10).json()
+          except:
+              data2 = {}
+          with open('profiles.json', 'w') as f1:
+              json.dump(data1, f1)
+          with open('reels.json', 'w') as f2:
+              json.dump(data2, f2)
+          "
 
       - name: गिट कमिट और पुश करें
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "actions@github.com"
           git add profiles.json reels.json
           git commit -m "Auto-update JSON files" || exit 0
-          git push
+          git push https://x-access-token:${GITHUB_TOKEN}@github.com/your-username/your-repo.git
