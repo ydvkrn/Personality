@@ -2,21 +2,28 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Reel Of The Day</title>
     <style>
-        body {
+        html, body {
             margin: 0;
             padding: 0;
-            height: 100vh;
+            height: 100%;
+            overflow: hidden; /* Prevent extra scroll */
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            background-color: #000;
             overflow-y: scroll;
             scroll-snap-type: y mandatory;
-            background-color: #000;
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
         }
         .video-container {
             position: relative;
             width: 100%;
-            height: 100vh;
+            height: 100vh; /* Full viewport height */
+            min-height: 100vh; /* Ensure it takes full height */
             scroll-snap-align: start;
             display: flex;
             justify-content: center;
@@ -33,13 +40,16 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            padding: 20px 40px;
-            font-size: 24px;
+            padding: 15px 30px;
+            font-size: 20px;
             background-color: #fff;
             border: none;
             border-radius: 10px;
             cursor: pointer;
             z-index: 10;
+        }
+        .hidden {
+            display: none; /* Completely hide non-active videos */
         }
     </style>
 </head>
@@ -47,51 +57,101 @@
     <div id="reels-container"></div>
 
     <script>
-        // JSON file se data fetch karna
-        fetch('path/to/your/data.json') // Apne JSON file ka path dalen
-            .then(response => response.json())
+        fetch('https://raw.githubusercontent.com/ydvkrn/Personality/refs/heads/main/data.json')
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
             .then(data => {
                 const reels = data.content.mediaItems.find(item => item.name === "Reel Of The Day").reels;
                 const container = document.getElementById('reels-container');
 
-                // Har reel ke liye video container banayein
                 reels.forEach((reel, index) => {
                     const div = document.createElement('div');
                     div.className = 'video-container';
                     div.id = `reel${index}`;
+                    if (index !== 0) div.classList.add('hidden'); // Hide all except first
 
                     const button = document.createElement('button');
                     button.className = 'start-button';
                     button.textContent = 'Start';
-                    button.onclick = () => startVideo(`video${index}`);
+                    button.onclick = () => startVideo(index);
 
                     const video = document.createElement('video');
                     video.id = `video${index}`;
                     video.src = reel.media;
                     video.muted = true;
+                    video.preload = 'auto';
 
                     div.appendChild(button);
                     div.appendChild(video);
                     container.appendChild(div);
 
-                    // Video end hone par next video pe scroll
                     video.onended = () => {
-                        const nextReel = document.getElementById(`reel${index + 1}`);
-                        if (nextReel) {
-                            window.scrollTo({ top: nextReel.offsetTop, behavior: 'smooth' });
-                            startVideo(`video${index + 1}`);
+                        const nextIndex = index + 1;
+                        if (nextIndex < reels.length) {
+                            switchVideo(nextIndex);
                         }
                     };
                 });
-            })
-            .catch(error => console.error('Error fetching JSON:', error));
 
-        function startVideo(videoId) {
-            const video = document.getElementById(videoId);
-            const button = video.parentElement.querySelector('.start-button');
-            button.style.display = 'none';
-            video.muted = false;
-            video.play();
+                let activeIndex = 0;
+                let lastScrollTop = 0;
+
+                window.addEventListener('scroll', () => {
+                    const scrollTop = window.scrollY;
+                    const windowHeight = window.innerHeight;
+                    const newIndex = Math.round(scrollTop / windowHeight);
+
+                    if (newIndex !== activeIndex && newIndex >= 0 && newIndex < reels.length) {
+                        switchVideo(newIndex);
+                        activeIndex = newIndex;
+                    }
+                    lastScrollTop = scrollTop;
+                }, { passive: true });
+
+                // Start first video on load
+                startVideo(0);
+            })
+            .catch(error => {
+                console.error('Error fetching or processing JSON:', error);
+                document.body.innerHTML = '<p style="color: white; text-align: center;">Error loading reels.</p>';
+            });
+
+        function startVideo(index) {
+            const allContainers = document.querySelectorAll('.video-container');
+            allContainers.forEach((container, i) => {
+                const video = container.querySelector('video');
+                if (i !== index) {
+                    video.pause();
+                    video.muted = true;
+                    video.currentTime = 0;
+                    container.classList.add('hidden');
+                } else {
+                    container.classList.remove('hidden');
+                    const button = container.querySelector('.start-button');
+                    button.style.display = 'none';
+                    video.muted = false;
+                    video.play().catch(err => console.error('Video play failed:', err));
+                }
+            });
+        }
+
+        function switchVideo(newIndex) {
+            const allContainers = document.querySelectorAll('.video-container');
+            allContainers.forEach((container, i) => {
+                if (i === newIndex) {
+                    container.classList.remove('hidden');
+                    startVideo(newIndex);
+                } else {
+                    container.classList.add('hidden');
+                }
+            });
+
+            const nextContainer = document.getElementById(`reel${newIndex}`);
+            if (nextContainer) {
+                window.scrollTo({ top: nextContainer.offsetTop, behavior: 'smooth' });
+            }
         }
     </script>
 </body>
