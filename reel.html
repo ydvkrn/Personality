@@ -36,6 +36,22 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            display: none;
+        }
+
+        .loading-buffer {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top: 5px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         .fixed-overlay {
@@ -45,9 +61,9 @@
             width: calc(100% - 30px);
             display: flex;
             align-items: center;
-            background: transparent;
             padding: 10px;
             border-radius: 8px;
+            background: transparent;
         }
 
         .profile-pic {
@@ -77,8 +93,7 @@
             width: 16px;
             height: 16px;
             margin-left: 5px;
-            display: none;
-            filter: invert(1); /* White Badge on Dark, Black on Light */
+            filter: invert(100%);
         }
 
         .title {
@@ -98,27 +113,12 @@
             cursor: pointer;
         }
 
-        /* ❤️ Like Animation */
-        .like-heart {
+        .like-animation {
             position: absolute;
-            width: 100px;
-            height: 100px;
-            background: url('https://png.pngtree.com/png-vector/20220428/ourmid/pngtree-smooth-glossy-heart-vector-file-ai-and-png-png-image_4557871.png') no-repeat center;
-            background-size: contain;
+            width: 80px;
+            height: 80px;
             opacity: 0;
-            transform: scale(0);
-            transition: opacity 0.4s ease, transform 0.4s ease;
-        }
-
-        .show-like {
-            opacity: 1;
-            transform: scale(1);
-            animation: fadeOut 0.6s ease-in-out forwards;
-        }
-
-        @keyframes fadeOut {
-            0% { opacity: 1; transform: scale(1.2); }
-            100% { opacity: 0; transform: scale(1); }
+            transition: opacity 0.5s ease-in-out;
         }
     </style>
 </head>
@@ -130,17 +130,19 @@
         <div class="user-info">
             <div class="username" id="username">
                 <span id="username-text">Loading...</span>
-                <img class="verify-badge" id="verify-badge" src="https://i.postimg.cc/J0fgKwmW/instagram-verification-badge.png">
+                <img class="verify-badge" id="verify-badge" src="https://i.postimg.cc/J0fgKwmW/instagram-verification-badge.png" style="display: none;">
             </div>
         </div>
     </div>
     
-    <div class="title" id="title">Loading...</div>
+    <div class="title" id="title" onclick="showFullTitle()">Loading...</div>
 
     <script>
+        let fullTitle = "";
+
         Promise.all([
-            fetch('profiles.json').then(res => res.json()),
-            fetch('reels.json').then(res => res.json())
+            fetch('https://raw.githubusercontent.com/ydvkrn/Personality/refs/heads/main/profiles.json').then(res => res.json()),
+            fetch('https://raw.githubusercontent.com/ydvkrn/Personality/refs/heads/main/reels.json').then(res => res.json())
         ])
         .then(([profilesData, reelsData]) => {
             let profiles = profilesData.profiles;
@@ -166,23 +168,34 @@
                     video.src = reel.media;
                     video.autoplay = true;
                     video.playsInline = true;
-                    video.preload = 'auto';
+                    video.preload = 'metadata';
                     video.controls = false;
                     video.muted = false;
                     video.loop = true;
+                    
+                    const buffer = document.createElement('div');
+                    buffer.className = 'loading-buffer';
 
-                    const likeHeart = document.createElement('div');
-                    likeHeart.className = 'like-heart';
+                    video.addEventListener('loadeddata', () => {
+                        video.style.display = 'block';
+                        buffer.style.display = 'none';
+                    });
+
+                    video.addEventListener('waiting', () => {
+                        buffer.style.display = 'block';
+                    });
+
+                    video.addEventListener('playing', () => {
+                        buffer.style.display = 'none';
+                    });
 
                     div.appendChild(video);
-                    div.appendChild(likeHeart);
+                    div.appendChild(buffer);
                     container.appendChild(div);
 
                     video.dataset.index = index;
 
-                    video.addEventListener("dblclick", function (e) {
-                        showLikeEffect(e, likeHeart);
-                    });
+                    video.addEventListener('dblclick', (e) => showLikeAnimation(div, e));
                 });
 
                 enableScrollPlayback();
@@ -200,13 +213,10 @@
                             let profileData = getProfileById(reels[index].id);
                             profilePic.src = profileData.profile;
                             usernameText.innerText = profileData.username;
-                            title.innerText = reels[index].title;
+                            fullTitle = reels[index].title;
+                            title.innerText = fullTitle.length > 20 ? fullTitle.substring(0, 20) + "..." : fullTitle;
 
-                            if (profileData.verified === true) {
-                                verifyBadge.style.display = "inline";
-                            } else {
-                                verifyBadge.style.display = "none";
-                            }
+                            verifyBadge.style.display = profileData.verified ? "inline" : "none";
                         } else {
                             video.pause();
                         }
@@ -217,21 +227,29 @@
                 document.querySelectorAll("video").forEach(video => observer.observe(video));
             }
 
-            function showLikeEffect(event, heart) {
-                const { clientX, clientY } = event;
-                heart.style.left = `${clientX - 50}px`;
-                heart.style.top = `${clientY - 50}px`;
-                heart.classList.add("show-like");
-                setTimeout(() => heart.classList.remove("show-like"), 600);
+            function showFullTitle() {
+                alert(fullTitle);
+            }
+
+            function showLikeAnimation(container, event) {
+                const heart = document.createElement('img');
+                heart.src = "https://png.pngtree.com/png-vector/20220428/ourmid/pngtree-smooth-glossy-heart-vector-file-ai-and-png-png-image_4557871.png";
+                heart.className = 'like-animation';
+                heart.style.position = 'absolute';
+                heart.style.left = `${event.clientX - 40}px`;
+                heart.style.top = `${event.clientY - 40}px`;
+                heart.style.opacity = 1;
+
+                container.appendChild(heart);
+                setTimeout(() => {
+                    heart.style.opacity = 0;
+                    container.removeChild(heart);
+                }, 500);
             }
 
             loadVideos();
         })
         .catch(error => console.error('Error loading data:', error));
-
-        document.getElementById('title').addEventListener('click', function () {
-            alert(this.innerText);
-        });
     </script>
 </body>
 </html>
