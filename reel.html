@@ -2,23 +2,26 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, viewport-fit=cover">
     <title>Reel Of The Day</title>
     <style>
-        html, body {
+        body, html {
             margin: 0;
             padding: 0;
             height: 100%;
             background-color: #000;
             overflow: hidden;
         }
+
         #reels-container {
+            width: 100%;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            height: 100vh;
             overflow-y: scroll;
             scroll-snap-type: y mandatory;
         }
+
         .video-container {
             position: relative;
             width: 100%;
@@ -28,117 +31,207 @@
             justify-content: center;
             align-items: center;
         }
+
         video {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
-        .double-tap {
+
+        .fixed-overlay {
+            position: fixed;
+            bottom: 80px;
+            left: 15px;
+            width: calc(100% - 30px);
+            display: flex;
+            align-items: center;
+            background: transparent;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .profile-pic {
+            width: 45px;
+            height: 45px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin-left: 10px;
+            color: white;
+        }
+
+        .username {
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+        }
+
+        .verify-badge {
+            width: 16px;
+            height: 16px;
+            margin-left: 5px;
+            display: none;
+            filter: invert(1); /* White Badge on Dark, Black on Light */
+        }
+
+        .title {
+            font-size: 14px;
+            opacity: 0.9;
+            position: fixed;
+            bottom: 40px;
+            left: 15px;
+            width: calc(100% - 30px);
+            color: white;
+            background: transparent;
+            padding: 5px 10px;
+            border-radius: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+        }
+
+        /* ❤️ Like Animation */
+        .like-heart {
             position: absolute;
+            width: 100px;
+            height: 100px;
+            background: url('https://png.pngtree.com/png-vector/20220428/ourmid/pngtree-smooth-glossy-heart-vector-file-ai-and-png-png-image_4557871.png') no-repeat center;
+            background-size: contain;
             opacity: 0;
-            transition: transform 0.1s, opacity 0.3s ease-out;
-            width: 180px;
-            height: 180px;
+            transform: scale(0);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        .show-like {
+            opacity: 1;
+            transform: scale(1);
+            animation: fadeOut 0.6s ease-in-out forwards;
+        }
+
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: scale(1.2); }
+            100% { opacity: 0; transform: scale(1); }
         }
     </style>
 </head>
 <body>
     <div id="reels-container"></div>
+    
+    <div class="fixed-overlay">
+        <img class="profile-pic" id="profile-pic" src="">
+        <div class="user-info">
+            <div class="username" id="username">
+                <span id="username-text">Loading...</span>
+                <img class="verify-badge" id="verify-badge" src="https://i.postimg.cc/J0fgKwmW/instagram-verification-badge.png">
+            </div>
+        </div>
+    </div>
+    
+    <div class="title" id="title">Loading...</div>
 
     <script>
-        fetch('https://raw.githubusercontent.com/ydvkrn/Personality/refs/heads/main/data.json')
-            .then(response => response.json())
-            .then(data => {
-                let reels = data.content.mediaItems.find(item => item.name === "Reel Of The Day").reels;
-                let usedIndexes = new Set();
-                const container = document.getElementById('reels-container');
+        Promise.all([
+            fetch('https://raw.githubusercontent.com/ydvkrn/Personality/refs/heads/main/profiles.json').then(res => res.json()),
+            fetch('https://raw.githubusercontent.com/ydvkrn/Personality/refs/heads/main/reels.json').then(res => res.json())
+        ])
+        .then(([profilesData, reelsData]) => {
+            let profiles = profilesData.profiles;
+            let reels = reelsData.reels;
 
-                function getRandomIndex() {
-                    if (usedIndexes.size === reels.length) usedIndexes.clear();
-                    let index;
-                    do {
-                        index = Math.floor(Math.random() * reels.length);
-                    } while (usedIndexes.has(index));
-                    usedIndexes.add(index);
-                    return index;
-                }
+            const container = document.getElementById('reels-container');
+            const profilePic = document.getElementById('profile-pic');
+            const usernameText = document.getElementById('username-text');
+            const verifyBadge = document.getElementById('verify-badge');
+            const title = document.getElementById('title');
 
-                function loadNextVideo() {
-                    let randomIndex = getRandomIndex();
-                    container.innerHTML = "";
+            function getProfileById(id) {
+                return profiles.find(profile => profile.id === id) || { username: "Unknown", profile: "https://example.com/default-profile.jpg", verified: false };
+            }
+
+            function loadVideos() {
+                container.innerHTML = "";
+                reels.forEach((reel, index) => {
                     const div = document.createElement('div');
                     div.className = 'video-container';
 
                     const video = document.createElement('video');
-                    video.src = reels[randomIndex].media;
-                    video.muted = true;
-                    video.loop = false;
+                    video.src = reel.media;
+                    video.autoplay = true;
                     video.playsInline = true;
                     video.preload = 'auto';
+                    video.controls = false;
+                    video.muted = false;
+                    video.loop = true;
+
+                    const likeHeart = document.createElement('div');
+                    likeHeart.className = 'like-heart';
 
                     div.appendChild(video);
+                    div.appendChild(likeHeart);
                     container.appendChild(div);
 
-                    let lastTap = 0;
-                    let gifSize = 180;
-                    let clickTimer;
+                    video.dataset.index = index;
 
-                    div.addEventListener('touchstart', (e) => {
-                        let currentTime = new Date().getTime();
-                        if (currentTime - lastTap < 400) {
-                            const doubleTap = document.createElement('img');
-                            doubleTap.src = 'https://i.postimg.cc/QxNJKcCm/5bc5f0d4-5be6-4b5d-9fa7-52049e9890b2.gif';
-                            doubleTap.className = 'double-tap';
-                            document.body.appendChild(doubleTap);
-
-                            let touch = e.touches[0];
-                            doubleTap.style.left = `${touch.clientX - gifSize / 2}px`;
-                            doubleTap.style.top = `${touch.clientY - gifSize / 2}px`;
-                            doubleTap.style.opacity = "1";
-
-                            if (gifSize < 190) {
-                                gifSize += 5;
-                            }
-
-                            doubleTap.style.width = `${gifSize}px`;
-                            doubleTap.style.height = `${gifSize}px`;
-
-                            setTimeout(() => {
-                                doubleTap.style.opacity = "0";
-                                setTimeout(() => {
-                                    doubleTap.remove();
-                                }, 300);
-                                gifSize = 180;
-                            }, 1000);
-                        }
-                        lastTap = currentTime;
+                    video.addEventListener("dblclick", function (e) {
+                        showLikeEffect(e, likeHeart);
                     });
-
-                    video.onplay = function() {
-                        setTimeout(() => {
-                            video.muted = false;
-                            video.volume = 1.0;
-                        }, 100);
-                    };
-
-                    video.play();
-                }
-
-                let lastScroll = 0;
-                container.addEventListener('scroll', () => {
-                    let scrollTop = container.scrollTop;
-                    let windowHeight = window.innerHeight;
-                    let newIndex = Math.round(scrollTop / windowHeight);
-
-                    if (newIndex !== lastScroll) {
-                        loadNextVideo();
-                        lastScroll = newIndex;
-                    }
                 });
 
-                loadNextVideo();
-            })
-            .catch(error => console.error('Error loading reels:', error));
+                enableScrollPlayback();
+            }
+
+            function enableScrollPlayback() {
+                function handleVideoPlayback(entries) {
+                    entries.forEach(entry => {
+                        let video = entry.target;
+                        let index = video.dataset.index;
+
+                        if (entry.isIntersecting) {
+                            video.play().catch(error => console.log("Play error:", error));
+
+                            let profileData = getProfileById(reels[index].id);
+                            profilePic.src = profileData.profile;
+                            usernameText.innerText = profileData.username;
+                            title.innerText = reels[index].title;
+
+                            if (profileData.verified === true) {
+                                verifyBadge.style.display = "inline";
+                            } else {
+                                verifyBadge.style.display = "none";
+                            }
+                        } else {
+                            video.pause();
+                        }
+                    });
+                }
+
+                let observer = new IntersectionObserver(handleVideoPlayback, { threshold: 0.8 });
+                document.querySelectorAll("video").forEach(video => observer.observe(video));
+            }
+
+            function showLikeEffect(event, heart) {
+                const { clientX, clientY } = event;
+                heart.style.left = `${clientX - 50}px`;
+                heart.style.top = `${clientY - 50}px`;
+                heart.classList.add("show-like");
+                setTimeout(() => heart.classList.remove("show-like"), 600);
+            }
+
+            loadVideos();
+        })
+        .catch(error => console.error('Error loading data:', error));
+
+        document.getElementById('title').addEventListener('click', function () {
+            alert(this.innerText);
+        });
     </script>
 </body>
 </html>
