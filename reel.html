@@ -139,8 +139,8 @@
 
     <script>
         Promise.all([
-            fetch('https://raw.githubusercontent.com/ydvkrn/Personality/refs/heads/main/profiles.json').then(res => res.json()),
-            fetch('https://raw.githubusercontent.com/ydvkrn/Personality/refs/heads/main/reels.json').then(res => res.json())
+            fetch('profiles.json').then(res => res.json()),
+            fetch('reels.json').then(res => res.json())
         ])
         .then(([profilesData, reelsData]) => {
             let profiles = profilesData.profiles;
