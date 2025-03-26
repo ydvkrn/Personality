@@ -32,7 +32,7 @@
         "link": "reel.html",
         "reels": [
           {
-            "title": "Bill",
+            "title": "Billie",
             "media": "https://res.cloudinary.com/dohrsxrnr/video/upload/v1742946525/k30qub9sodfffalrbaby.mp4"
           },
           {
@@ -40,8 +40,9 @@
             "media": "https://res.cloudinary.com/dohrsxrnr/video/upload/v1742947436/rp3ptutnkdryauassrpj.mp4"
           },
           {
-            "title": "Reel 3",
+            "title": "Sofia",
             "media": "https://res.cloudinary.com/dohrsxrnr/video/upload/v1742948038/oxytd6fmzyci2rosocxd.mp4"
+          }
         ]
       }
     ]
