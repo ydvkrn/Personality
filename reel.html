@@ -13,7 +13,7 @@
             overflow: hidden;
             -webkit-user-select: none;
             user-select: none;
-            touch-action: manipulation; /* Improve touch responsiveness */
+            touch-action: manipulation;
         }
 
         #reels-container {
@@ -48,12 +48,12 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 40px;
-            height: 40px;
-            border: 4px solid #fff;
-            border-top: 4px solid transparent;
+            width: 32px;
+            height: 32px;
+            border: 3px solid #fff;
+            border-top: 3px solid transparent;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            animation: spin 0.8s linear infinite;
             z-index: 10;
             display: none;
         }
@@ -233,7 +233,7 @@
                 const video = document.createElement('video');
                 video.src = await fetchAndCache(reel.media) || '';
                 video.playsInline = true;
-                video.preload = 'metadata'; // Minimal preload initially
+                video.preload = index < 2 ? 'auto' : 'metadata'; // Preload first 2 aggressively
                 video.controls = false;
                 video.muted = true;
                 video.loop = true;
@@ -242,12 +242,12 @@
                 loader.className = 'video-loader';
                 div.appendChild(loader);
 
-                video.addEventListener('canplaythrough', () => {
+                video.addEventListener('canplay', () => {
                     loader.style.display = 'none';
-                    video.dataset.loaded = 'true';
+                    video.dataset.ready = 'true';
                 });
                 video.addEventListener('waiting', () => {
-                    if (video.dataset.loaded !== 'true') loader.style.display = 'block';
+                    if (video.dataset.ready !== 'true') loader.style.display = 'block';
                 });
                 video.addEventListener('error', () => {
                     loader.style.display = 'block';
@@ -273,7 +273,7 @@
             }
 
             async function loadInitialVideos() {
-                for (let i = 0; i < Math.min(2, reels.length); i++) {
+                for (let i = 0; i < Math.min(3, reels.length); i++) { // Load 3 initially
                     const videoElement = await createVideoElement(reels[i], i);
                     if (videoElement) container.appendChild(videoElement);
                 }
@@ -282,6 +282,8 @@
 
             function enableScrollPlayback() {
                 let currentVideo = null;
+                let nextVideoPreloaded = false;
+
                 const observer = new IntersectionObserver(debounce((entries) => {
                     requestAnimationFrame(() => {
                         entries.forEach(async entry => {
@@ -297,6 +299,7 @@
                                 }
                                 currentVideo = video;
                                 video.preload = 'auto';
+                                video.muted = !isAudioEnabled;
 
                                 // Pause all other videos
                                 document.querySelectorAll('video').forEach(v => {
@@ -306,8 +309,7 @@
                                     }
                                 });
 
-                                video.muted = !isAudioEnabled;
-                                if (video.dataset.loaded !== 'true') {
+                                if (video.dataset.ready !== 'true') {
                                     loader.style.display = 'block';
                                 }
                                 video.play().catch(() => loader.style.display = 'block');
@@ -321,9 +323,14 @@
                                 title.innerText = fullTitle;
                                 verifyBadge.style.display = profileData.verified ? "inline" : "none";
 
-                                if (index === container.children.length - 1 && index < reels.length - 1) {
-                                    const nextVideo = await createVideoElement(reels[index + 1], index + 1);
-                                    if (nextVideo) container.appendChild(nextVideo);
+                                // Preload next video
+                                if (!nextVideoPreloaded && index < reels.length - 1) {
+                                    const nextIndex = index + 1;
+                                    const nextVideoElement = await createVideoElement(reels[nextIndex], nextIndex);
+                                    if (nextVideoElement) {
+                                        container.appendChild(nextVideoElement);
+                                        nextVideoPreloaded = true;
+                                    }
                                 }
                             } else {
                                 video.preload = 'metadata';
@@ -331,11 +338,12 @@
                                     video.pause();
                                     video.currentTime = 0;
                                     currentVideo = null;
+                                    nextVideoPreloaded = false; // Reset for next preload
                                 }
                             }
                         });
                     });
-                }, 200), { threshold: 0.7 }); // Increased debounce to 200ms, lowered threshold
+                }, 150), { threshold: 0.6 }); // 150ms debounce, 0.6 threshold
 
                 document.querySelectorAll("video").forEach(video => observer.observe(video));
             }
