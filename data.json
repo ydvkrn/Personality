@@ -8,8 +8,13 @@
     "audio": "https://res.cloudinary.com/dohrsxrnr/video/upload/v1742860819/bs40jscuamdnaxahhdjp.mp3",
     "mediaItems": [
       {
+        "name": "MSM Reel",
+        "link": "reel.html",
+        "media": "https://i.postimg.cc/MZbSqSVj/20250326-053803.jpg"
+      },
+      {
         "name": "TRIBUTE",
-        "link": "",
+        "link": null,
         "media": "https://i.postimg.cc/fT8Fr4bh/Exploring-the-Complex-Legacy-of-XXXTentacion-the-Controversial-Rapper.jpg"
       },
       {
@@ -26,24 +31,6 @@
         "name": "LEARN",
         "link": "life.html",
         "media": "https://i.postimg.cc/yx6bnK2t/image.jpg"
-      },
-      {
-        "name": "Reel Of The Day",
-        "link": "reel.html",
-        "reels": [
-          {
-            "title": "Billie",
-            "media": "https://res.cloudinary.com/dohrsxrnr/video/upload/v1742946525/k30qub9sodfffalrbaby.mp4"
-          },
-          {
-            "title": "Negetive",
-            "media": "https://res.cloudinary.com/dohrsxrnr/video/upload/v1742947436/rp3ptutnkdryauassrpj.mp4"
-          },
-          {
-            "title": "Sofia",
-            "media": "https://res.cloudinary.com/dohrsxrnr/video/upload/v1742948038/oxytd6fmzyci2rosocxd.mp4"
-          }
-        ]
       }
     ]
   }
