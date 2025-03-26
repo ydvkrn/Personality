@@ -1,9 +1,7 @@
 name: Auto Update reels.txt
 
 on:
-  schedule:
-    - cron: '0 * * * *' # Har ghante chalega
-  workflow_dispatch: # Manual run ke liye
+  workflow_dispatch: # Manual run ke liye abhi
 
 jobs:
   update-txt:
@@ -11,17 +9,31 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Pura history fetch karega
 
-      - name: Fetch JSON and Save as TXT
+      - name: Fetch and Save reels.txt
         run: |
-          curl http://msmpr.free.nf/reels.json -o reels.txt
-          echo "Fetched data and saved to reels.txt:"
-          cat reels.txt # Debugging ke liye content dikhao
+          echo "Fetching data from http://msmpr.free.nf/reels.json..."
+          curl -v http://msmpr.free.nf/reels.json -o reels.txt || echo "Fetch failed"
+          if [ ! -s reels.txt ]; then echo "Error: reels.txt is empty"; exit 1; fi
+          echo "reels.txt content:"
+          cat reels.txt
+          ls -lh reels.txt # File size aur existence check
 
-      - name: Commit and Push Changes
+      - name: Check Git Setup
         run: |
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
+          git status # Changes dikhao
+          git branch # Current branch check karein
+
+      - name: Commit Changes
+        run: |
           git add reels.txt
-          git commit -m "Update reels.txt from msmpr.free.nf - $(date +%s)" || echo "No changes to commit"
-          git push
+          git status
+          git commit -m "Update reels.txt - $(date +%s)" || echo "No changes to commit"
+
+      - name: Push Changes
+        run: |
+          git push || (echo "Normal push failed, trying force push"; git push --force)
