@@ -13,6 +13,7 @@
             overflow: hidden;
             -webkit-user-select: none;
             user-select: none;
+            touch-action: manipulation; /* Improve touch responsiveness */
         }
 
         #reels-container {
@@ -190,7 +191,6 @@
             }
         }
 
-        // Debounce function for scroll handling
         function debounce(func, wait) {
             let timeout;
             return function (...args) {
@@ -233,7 +233,7 @@
                 const video = document.createElement('video');
                 video.src = await fetchAndCache(reel.media) || '';
                 video.playsInline = true;
-                video.preload = 'metadata'; // Preload metadata initially
+                video.preload = 'metadata'; // Minimal preload initially
                 video.controls = false;
                 video.muted = true;
                 video.loop = true;
@@ -243,17 +243,15 @@
                 div.appendChild(loader);
 
                 video.addEventListener('canplaythrough', () => {
-                    loader.style.display = 'none'; // Hide when fully buffered
+                    loader.style.display = 'none';
+                    video.dataset.loaded = 'true';
                 });
                 video.addEventListener('waiting', () => {
-                    loader.style.display = 'block'; // Show during buffering
+                    if (video.dataset.loaded !== 'true') loader.style.display = 'block';
                 });
                 video.addEventListener('error', () => {
                     loader.style.display = 'block';
                     loader.innerHTML = 'Error';
-                });
-                video.addEventListener('loadeddata', () => {
-                    video.dataset.loaded = 'true'; // Mark as loaded
                 });
 
                 video.addEventListener('click', () => {
@@ -285,49 +283,59 @@
             function enableScrollPlayback() {
                 let currentVideo = null;
                 const observer = new IntersectionObserver(debounce((entries) => {
-                    entries.forEach(async entry => {
-                        const video = entry.target;
-                        const index = parseInt(video.dataset.index);
-                        const loader = video.parentElement.querySelector('.video-loader');
+                    requestAnimationFrame(() => {
+                        entries.forEach(async entry => {
+                            const video = entry.target;
+                            const index = parseInt(video.dataset.index);
+                            const loader = video.parentElement.querySelector('.video-loader');
 
-                        if (entry.isIntersecting) {
-                            if (currentVideo && currentVideo !== video) {
-                                currentVideo.pause();
-                                currentVideo.currentTime = 0;
-                                currentVideo.preload = 'metadata'; // Reset to minimal preload
-                            }
-                            currentVideo = video;
-                            video.preload = 'auto'; // Fully preload when in view
-                            video.muted = !isAudioEnabled;
+                            if (entry.isIntersecting) {
+                                if (currentVideo && currentVideo !== video) {
+                                    currentVideo.pause();
+                                    currentVideo.currentTime = 0;
+                                    currentVideo.preload = 'metadata';
+                                }
+                                currentVideo = video;
+                                video.preload = 'auto';
 
-                            if (video.dataset.loaded !== 'true') {
-                                loader.style.display = 'block';
-                            }
-                            video.play().catch(() => loader.style.display = 'block');
+                                // Pause all other videos
+                                document.querySelectorAll('video').forEach(v => {
+                                    if (v !== video) {
+                                        v.pause();
+                                        v.currentTime = 0;
+                                    }
+                                });
 
-                            const profileData = getProfileById(reels[index].id);
-                            fetchAndCache(profileData.profile).then(cachedUrl => {
-                                profilePic.src = cachedUrl || "https://example.com/default-profile.jpg";
-                            });
-                            usernameText.innerText = profileData.username;
-                            fullTitle = reels[index].title;
-                            title.innerText = fullTitle;
-                            verifyBadge.style.display = profileData.verified ? "inline" : "none";
+                                video.muted = !isAudioEnabled;
+                                if (video.dataset.loaded !== 'true') {
+                                    loader.style.display = 'block';
+                                }
+                                video.play().catch(() => loader.style.display = 'block');
 
-                            if (index === container.children.length - 1 && index < reels.length - 1) {
-                                const nextVideo = await createVideoElement(reels[index + 1], index + 1);
-                                if (nextVideo) container.appendChild(nextVideo);
+                                const profileData = getProfileById(reels[index].id);
+                                fetchAndCache(profileData.profile).then(cachedUrl => {
+                                    profilePic.src = cachedUrl || "https://example.com/default-profile.jpg";
+                                });
+                                usernameText.innerText = profileData.username;
+                                fullTitle = reels[index].title;
+                                title.innerText = fullTitle;
+                                verifyBadge.style.display = profileData.verified ? "inline" : "none";
+
+                                if (index === container.children.length - 1 && index < reels.length - 1) {
+                                    const nextVideo = await createVideoElement(reels[index + 1], index + 1);
+                                    if (nextVideo) container.appendChild(nextVideo);
+                                }
+                            } else {
+                                video.preload = 'metadata';
+                                if (video === currentVideo) {
+                                    video.pause();
+                                    video.currentTime = 0;
+                                    currentVideo = null;
+                                }
                             }
-                        } else {
-                            video.preload = 'metadata'; // Reduce resource use when out of view
-                            if (video === currentVideo) {
-                                video.pause();
-                                video.currentTime = 0;
-                                currentVideo = null;
-                            }
-                        }
+                        });
                     });
-                }, 100), { threshold: 0.8 }); // Debounce with 100ms delay
+                }, 200), { threshold: 0.7 }); // Increased debounce to 200ms, lowered threshold
 
                 document.querySelectorAll("video").forEach(video => observer.observe(video));
             }
