@@ -1,0 +1,16 @@
+{
+  "profiles": [
+    {
+      "id": "A1",
+      "username": "Billieeilish",
+      "profile": "https://example.com/johndoe.jpg",
+      "verified": true
+    },
+    {
+      "id": "MSM",
+      "username": "masoom",
+      "profile": "https://res.cloudinary.com/dohrsxrnr/image/upload/v1742956607/Me.webp",
+      "verified": true
+    }
+  ]
+}
