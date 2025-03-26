@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Reel Of The Day</title>
     <style>
         body, html {
@@ -10,23 +10,25 @@
             padding: 0;
             height: 100%;
             background-color: #000;
-            overflow: hidden;
+            overflow: hidden; /* Prevent body scroll */
         }
 
         #reels-container {
             width: 100%;
-            height: 100vh;
+            height: 100vh; /* Full viewport height */
             display: flex;
             flex-direction: column;
-            overflow-y: scroll;
-            scroll-snap-type: y mandatory;
+            overflow-y: auto; /* Changed to auto for smoother scrolling */
+            scroll-snap-type: y mandatory; /* Snap to each video */
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
         }
 
         .video-container {
             position: relative;
             width: 100%;
-            height: 100vh;
-            scroll-snap-align: start;
+            height: 100vh; /* Each video takes full viewport height */
+            scroll-snap-align: start; /* Snap to top of each video */
+            flex-shrink: 0; /* Prevent shrinking */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -36,7 +38,7 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            display: none;
+            display: block;
         }
 
         .loading-buffer {
@@ -47,6 +49,7 @@
             border-top: 5px solid white;
             border-radius: 50%;
             animation: spin 1s linear infinite;
+            display: none;
         }
 
         @keyframes spin {
@@ -141,6 +144,13 @@
         let fullTitle = "";
         let hasInteracted = false;
 
+        // Simulate user interaction on load
+        window.addEventListener('load', () => {
+            const event = new Event('click', { bubbles: true });
+            document.body.dispatchEvent(event);
+            hasInteracted = true;
+        });
+
         Promise.all([
             fetch('https://raw.githubusercontent.com/ydvkrn/Personality/refs/heads/main/profiles.json').then(res => res.json()),
             fetch('https://raw.githubusercontent.com/ydvkrn/Personality/refs/heads/main/reels.json').then(res => res.json())
@@ -167,36 +177,27 @@
 
                     const video = document.createElement('video');
                     video.src = reel.media;
-                    video.autoplay = false;
+                    video.autoplay = true;
                     video.playsInline = true;
-                    video.preload = 'auto';
+                    video.preload = 'metadata';
                     video.controls = false;
-                    video.muted = true; // Initially muted
+                    video.muted = false;
                     video.loop = true;
-                    
+
                     const buffer = document.createElement('div');
                     buffer.className = 'loading-buffer';
-                    buffer.style.display = 'block';
 
-                    video.addEventListener('canplay', () => {
-                        buffer.style.display = 'none';
-                        video.style.display = 'block';
-                    });
-
-                    video.addEventListener('waiting', () => {
-                        buffer.style.display = 'block';
-                        video.style.display = 'none';
-                    });
-
-                    video.addEventListener('playing', () => {
-                        buffer.style.display = 'none';
-                        video.style.display = 'block';
+                    video.addEventListener('loadedmetadata', () => {
+                        video.play().catch(error => {
+                            console.log("Playback error:", error);
+                            video.muted = true;
+                            video.play();
+                        });
                     });
 
                     video.addEventListener('error', (e) => {
                         console.error('Video error:', e);
                         buffer.style.display = 'block';
-                        video.style.display = 'none';
                     });
 
                     div.appendChild(video);
@@ -221,11 +222,10 @@
                         let index = video.dataset.index;
 
                         if (entry.isIntersecting) {
-                            video.play().then(() => {
-                                video.muted = false; // Unmute after user interaction or simulated interaction
-                            }).catch(error => {
+                            video.play().catch(error => {
                                 console.log("Play error:", error);
                                 video.muted = true;
+                                video.play();
                             });
 
                             let profileData = getProfileById(reels[index].id);
@@ -237,7 +237,6 @@
                             verifyBadge.style.display = profileData.verified ? "inline" : "none";
                         } else {
                             video.pause();
-                            video.muted = true;
                             video.currentTime = 0;
                         }
                     });
@@ -245,43 +244,6 @@
 
                 let observer = new IntersectionObserver(handleVideoPlayback, { threshold: 0.6 });
                 document.querySelectorAll("video").forEach(video => observer.observe(video));
-
-                // Simulate user interaction for first video
-                const firstVideo = document.querySelector('video');
-                if (firstVideo) {
-                    // Create a dummy click event to simulate user interaction
-                    const simulateInteraction = () => {
-                        const event = new Event('click', { bubbles: true });
-                        document.body.dispatchEvent(event);
-                        hasInteracted = true;
-                        firstVideo.play().then(() => {
-                            firstVideo.muted = false; // Unmute after simulated interaction
-                        }).catch(error => console.log("First video play error:", error));
-                    };
-
-                    // Wait for page load to simulate interaction
-                    window.addEventListener('load', simulateInteraction);
-
-                    // Fallback: If simulated interaction fails, play muted
-                    firstVideo.play().catch(error => {
-                        console.log("First video play error (muted fallback):", error);
-                        firstVideo.muted = true;
-                    });
-                }
-
-                // Detect real user interaction
-                let touchStartY = 0;
-                window.addEventListener('touchstart', (event) => {
-                    touchStartY = event.touches[0].clientY;
-                }, { passive: true });
-
-                window.addEventListener('touchmove', (event) => {
-                    const touchEndY = event.touches[0].clientY;
-                    const deltaY = touchStartY - touchEndY;
-                    if (Math.abs(deltaY) > 10) {
-                        hasInteracted = true;
-                    }
-                }, { passive: true });
             }
 
             function showFullTitle() {
