@@ -9,14 +9,15 @@
             margin: 0;
             padding: 0;
             height: 100%;
-            overflow: hidden;
             background-color: #000;
+            overflow: hidden;
         }
-        body {
-            overflow-y: auto;
+        #reels-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow-y: scroll;
             scroll-snap-type: y mandatory;
-            scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
         }
         .video-container {
             position: relative;
@@ -31,19 +32,13 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            pointer-events: auto;
         }
-        .like-animation {
+        .double-tap {
             position: absolute;
-            width: 100px;
-            height: 100px;
-            pointer-events: none;
-            z-index: 10;
-            animation: fadeOut 1s ease forwards;
-        }
-        @keyframes fadeOut {
-            0% { opacity: 1; transform: scale(1); }
-            100% { opacity: 0; transform: scale(1.5); }
+            opacity: 0;
+            transition: transform 0.1s, opacity 0.3s ease-out;
+            width: 180px;
+            height: 180px;
         }
     </style>
 </head>
@@ -51,29 +46,31 @@
     <div id="reels-container"></div>
 
     <script>
-        fetch('https://raw.githubusercontent.com/ydvkrn/Personality/refs/heads/main/reels.json') // Line 57 - Tera link yahan daal diya
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok');
-                return response.json();
-            })
+        fetch('https://raw.githubusercontent.com/ydvkrn/Personality/refs/heads/main/data.json')
+            .then(response => response.json())
             .then(data => {
-                const reels = data.reels;
+                let reels = data.content.mediaItems.find(item => item.name === "Reel Of The Day").reels;
+                let usedIndexes = new Set();
                 const container = document.getElementById('reels-container');
-                let playedVideos = new Set();
-                let videoOrder = [];
-                let activeIndex = 0;
 
-                const shuffleArray = (array) => array.sort(() => Math.random() - 0.5);
-                videoOrder = shuffleArray([...reels]);
+                function getRandomIndex() {
+                    if (usedIndexes.size === reels.length) usedIndexes.clear();
+                    let index;
+                    do {
+                        index = Math.floor(Math.random() * reels.length);
+                    } while (usedIndexes.has(index));
+                    usedIndexes.add(index);
+                    return index;
+                }
 
-                videoOrder.forEach((reel, index) => {
+                function loadNextVideo() {
+                    let randomIndex = getRandomIndex();
+                    container.innerHTML = "";
                     const div = document.createElement('div');
                     div.className = 'video-container';
-                    div.id = `reel${index}`;
 
                     const video = document.createElement('video');
-                    video.id = `video${index}`;
-                    video.src = reel.media;
+                    video.src = reels[randomIndex].media;
                     video.muted = true;
                     video.loop = false;
                     video.playsInline = true;
@@ -82,141 +79,64 @@
                     div.appendChild(video);
                     container.appendChild(div);
 
-                    video.addEventListener('dblclick', (event) => {
-                        const rect = video.getBoundingClientRect();
-                        const x = event.clientX - rect.left;
-                        const y = event.clientY - rect.top;
+                    let lastTap = 0;
+                    let gifSize = 180;
+                    let clickTimer;
 
-                        const likeImg = document.createElement('img');
-                        likeImg.src = 'https://i.postimg.cc/QxNJKcCm/5bc5f0d4-5be6-4b5d-9fa7-52049e9890b2.gif';
-                        likeImg.className = 'like-animation';
-                        likeImg.style.left = `${x - 50}px`;
-                        likeImg.style.top = `${y - 50}px`;
-                        div.appendChild(likeImg);
+                    div.addEventListener('touchstart', (e) => {
+                        let currentTime = new Date().getTime();
+                        if (currentTime - lastTap < 400) {
+                            const doubleTap = document.createElement('img');
+                            doubleTap.src = 'https://i.postimg.cc/QxNJKcCm/5bc5f0d4-5be6-4b5d-9fa7-52049e9890b2.gif';
+                            doubleTap.className = 'double-tap';
+                            document.body.appendChild(doubleTap);
 
-                        setTimeout(() => likeImg.remove(), 1000);
+                            let touch = e.touches[0];
+                            doubleTap.style.left = `${touch.clientX - gifSize / 2}px`;
+                            doubleTap.style.top = `${touch.clientY - gifSize / 2}px`;
+                            doubleTap.style.opacity = "1";
+
+                            if (gifSize < 190) {
+                                gifSize += 5;
+                            }
+
+                            doubleTap.style.width = `${gifSize}px`;
+                            doubleTap.style.height = `${gifSize}px`;
+
+                            setTimeout(() => {
+                                doubleTap.style.opacity = "0";
+                                setTimeout(() => {
+                                    doubleTap.remove();
+                                }, 300);
+                                gifSize = 180;
+                            }, 1000);
+                        }
+                        lastTap = currentTime;
                     });
+
+                    video.onplay = function() {
+                        setTimeout(() => {
+                            video.muted = false;
+                            video.volume = 1.0;
+                        }, 100);
+                    };
+
+                    video.play();
+                }
+
+                let lastScroll = 0;
+                container.addEventListener('scroll', () => {
+                    let scrollTop = container.scrollTop;
+                    let windowHeight = window.innerHeight;
+                    let newIndex = Math.round(scrollTop / windowHeight);
+
+                    if (newIndex !== lastScroll) {
+                        loadNextVideo();
+                        lastScroll = newIndex;
+                    }
                 });
 
-                function playCurrentVideo() {
-                    document.querySelectorAll('.video-container video').forEach((vid, index) => {
-                        if (index === activeIndex) {
-                            vid.muted = false;
-                            vid.play().catch(err => console.error('Play failed:', err));
-                            playedVideos.add(videoOrder[index].id);
-                        } else {
-                            vid.pause();
-                            vid.muted = true;
-                            vid.currentTime = 0;
-                        }
-                    });
-                }
-
-                let isScrolling = false;
-                let lastScrollTime = 0;
-
-                window.addEventListener('wheel', (event) => {
-                    const now = Date.now();
-                    if (isScrolling || now - lastScrollTime < 600) return;
-
-                    isScrolling = true;
-                    lastScrollTime = now;
-
-                    if (event.deltaY > 0 && activeIndex < videoOrder.length - 1) {
-                        activeIndex++;
-                        adjustVideoOrder();
-                    } else if (event.deltaY < 0 && activeIndex > 0) {
-                        activeIndex--;
-                    }
-
-                    document.getElementById(`reel${activeIndex}`).scrollIntoView({ behavior: 'smooth' });
-                    playCurrentVideo();
-
-                    setTimeout(() => isScrolling = false, 600);
-                }, { passive: true });
-
-                let touchStartY = 0;
-
-                window.addEventListener('touchstart', (event) => {
-                    touchStartY = event.touches[0].clientY;
-                }, { passive: true });
-
-                window.addEventListener('touchmove', (event) => {
-                    const now = Date.now();
-                    if (isScrolling || now - lastScrollTime < 600) return;
-
-                    const touchEndY = event.touches[0].clientY;
-                    const deltaY = touchStartY - touchEndY;
-
-                    if (deltaY > 50 && activeIndex < videoOrder.length - 1) {
-                        isScrolling = true;
-                        lastScrollTime = now;
-                        activeIndex++;
-                        adjustVideoOrder();
-                        document.getElementById(`reel${activeIndex}`).scrollIntoView({ behavior: 'smooth' });
-                        playCurrentVideo();
-                        setTimeout(() => isScrolling = false, 600);
-                    } else if (deltaY < -50 && activeIndex > 0) {
-                        isScrolling = true;
-                        lastScrollTime = now;
-                        activeIndex--;
-                        document.getElementById(`reel${activeIndex}`).scrollIntoView({ behavior: 'smooth' });
-                        playCurrentVideo();
-                        setTimeout(() => isScrolling = false, 600);
-                    }
-                }, { passive: false });
-
-                function adjustVideoOrder() {
-                    if (activeIndex === videoOrder.length - 1 && playedVideos.size < reels.length) {
-                        const unplayed = reels.filter(r => !playedVideos.has(r.id));
-                        if (unplayed.length > 0) {
-                            videoOrder.push(unplayed[Math.floor(Math.random() * unplayed.length)]);
-                            updateVideoElements();
-                        }
-                    }
-                }
-
-                function updateVideoElements() {
-                    const containers = document.querySelectorAll('.video-container');
-                    videoOrder.forEach((reel, index) => {
-                        if (index >= containers.length) {
-                            const div = document.createElement('div');
-                            div.className = 'video-container';
-                            div.id = `reel${index}`;
-                            const video = document.createElement('video');
-                            video.id = `video${index}`;
-                            video.src = reel.media;
-                            video.muted = true;
-                            video.loop = false;
-                            video.playsInline = true;
-                            video.preload = 'auto';
-                            div.appendChild(video);
-                            container.appendChild(div);
-
-                            video.addEventListener('dblclick', (event) => {
-                                const rect = video.getBoundingClientRect();
-                                const x = event.clientX - rect.left;
-                                const y = event.clientY - rect.top;
-
-                                const likeImg = document.createElement('img');
-                                likeImg.src = 'https://i.postimg.cc/QxNJKcCm/5bc5f0d4-5be6-4b5d-9fa7-52049e9890b2.gif';
-                                likeImg.className = 'like-animation';
-                                likeImg.style.left = `${x - 50}px`;
-                                likeImg.style.top = `${y - 50}px`;
-                                div.appendChild(likeImg);
-
-                                setTimeout(() => likeImg.remove(), 1000);
-                            });
-                        }
-                    });
-                }
-
-                const firstVideo = document.getElementById('video0');
-                firstVideo.play().then(() => {
-                    setTimeout(() => {
-                        firstVideo.muted = false;
-                    }, 100);
-                }).catch(err => console.error('First video play failed:', err));
+                loadNextVideo();
             })
             .catch(error => console.error('Error loading reels:', error));
     </script>
