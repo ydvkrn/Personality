@@ -191,14 +191,6 @@
             }
         }
 
-        function debounce(func, wait) {
-            let timeout;
-            return function (...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), wait);
-            };
-        }
-
         Promise.all([
             fetch('https://raw.githubusercontent.com/ydvkrn/Personality/refs/heads/main/profiles.json')
                 .then(res => res.ok ? res.json() : Promise.reject('Profiles fetch failed'))
@@ -233,7 +225,7 @@
                 const video = document.createElement('video');
                 video.src = await fetchAndCache(reel.media) || '';
                 video.playsInline = true;
-                video.preload = index < 2 ? 'auto' : 'metadata'; // Preload first 2 aggressively
+                video.preload = 'metadata'; // Minimal preload for all
                 video.controls = false;
                 video.muted = true;
                 video.loop = true;
@@ -272,8 +264,8 @@
                 return div;
             }
 
-            async function loadInitialVideos() {
-                for (let i = 0; i < Math.min(3, reels.length); i++) { // Load 3 initially
+            async function loadAllVideos() {
+                for (let i = 0; i < reels.length; i++) {
                     const videoElement = await createVideoElement(reels[i], i);
                     if (videoElement) container.appendChild(videoElement);
                 }
@@ -282,11 +274,10 @@
 
             function enableScrollPlayback() {
                 let currentVideo = null;
-                let nextVideoPreloaded = false;
 
-                const observer = new IntersectionObserver(debounce((entries) => {
+                const observer = new IntersectionObserver((entries) => {
                     requestAnimationFrame(() => {
-                        entries.forEach(async entry => {
+                        entries.forEach(entry => {
                             const video = entry.target;
                             const index = parseInt(video.dataset.index);
                             const loader = video.parentElement.querySelector('.video-loader');
@@ -306,6 +297,7 @@
                                     if (v !== video) {
                                         v.pause();
                                         v.currentTime = 0;
+                                        v.preload = 'metadata';
                                     }
                                 });
 
@@ -322,28 +314,17 @@
                                 fullTitle = reels[index].title;
                                 title.innerText = fullTitle;
                                 verifyBadge.style.display = profileData.verified ? "inline" : "none";
-
-                                // Preload next video
-                                if (!nextVideoPreloaded && index < reels.length - 1) {
-                                    const nextIndex = index + 1;
-                                    const nextVideoElement = await createVideoElement(reels[nextIndex], nextIndex);
-                                    if (nextVideoElement) {
-                                        container.appendChild(nextVideoElement);
-                                        nextVideoPreloaded = true;
-                                    }
-                                }
                             } else {
                                 video.preload = 'metadata';
                                 if (video === currentVideo) {
                                     video.pause();
                                     video.currentTime = 0;
                                     currentVideo = null;
-                                    nextVideoPreloaded = false; // Reset for next preload
                                 }
                             }
                         });
                     });
-                }, 150), { threshold: 0.6 }); // 150ms debounce, 0.6 threshold
+                }, { threshold: 0.7 });
 
                 document.querySelectorAll("video").forEach(video => observer.observe(video));
             }
@@ -367,7 +348,7 @@
                 }, 500);
             }
 
-            loadInitialVideos();
+            loadAllVideos();
         })
         .catch(error => {
             console.error('Error loading data:', error);
