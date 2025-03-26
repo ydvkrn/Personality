@@ -1,6 +1,6 @@
-- name: JSON डेटा डाउनलोड करें (Bypass JavaScript Challenge)
+- name: JSON डेटा डाउनलोड करें (Custom Headers)
         run: |
-          curl -o profiles.json "https://api.allorigins.win/raw?url=http://msmpr.free.nf/profiles.json"
-          curl -o reels.json "https://api.allorigins.win/raw?url=http://msmpr.free.nf/reels.json"
+          curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" -b "cookie_name=cookie_value" -o profiles.json "http://msmpr.free.nf/profiles.json"
+          curl -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" -b "cookie_name=cookie_value" -o reels.json "http://msmpr.free.nf/reels.json"
           cat profiles.json
           cat reels.json
