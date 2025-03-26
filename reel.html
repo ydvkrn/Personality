@@ -11,6 +11,8 @@
             height: 100%;
             background-color: #000;
             overflow: hidden;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         #reels-container {
@@ -29,10 +31,7 @@
             height: 100vh;
             scroll-snap-align: start;
             flex-shrink: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #000; /* Ensure black background */
+            background-color: #000;
         }
 
         video {
@@ -40,7 +39,7 @@
             height: 100%;
             object-fit: cover;
             display: block;
-            background-color: #000; /* Black background for video */
+            background-color: #000;
         }
 
         .video-loader {
@@ -48,15 +47,19 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: white;
-            font-size: 18px;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #fff;
+            border-top: 4px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
             z-index: 10;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            border-radius: 8px;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
 
         .fixed-overlay {
@@ -67,7 +70,6 @@
             display: flex;
             align-items: center;
             padding: 10px;
-            border-radius: 8px;
             background: transparent;
         }
 
@@ -80,9 +82,6 @@
         }
 
         .user-info {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
             margin-left: 10px;
             color: white;
         }
@@ -109,12 +108,10 @@
             left: 15px;
             width: calc(100% - 30px);
             color: white;
-            background: transparent;
             padding: 5px 10px;
+            background: transparent;
             border-radius: 8px;
             white-space: normal;
-            overflow: visible;
-            text-overflow: clip;
             cursor: pointer;
         }
 
@@ -147,7 +144,6 @@
         let isAudioEnabled = localStorage.getItem('audioEnabled') === 'true';
         const AUDIO_PERSISTENCE_DURATION = 30 * 60 * 1000;
         const CACHE_NAME = 'reels-cache-v1';
-        const INITIAL_LOAD_COUNT = 3;
 
         function setAudioPersistence() {
             localStorage.setItem('audioEnabled', 'true');
@@ -157,8 +153,7 @@
         function shouldKeepAudioEnabled() {
             const timestamp = localStorage.getItem('audioTimestamp');
             if (!timestamp) return false;
-            const timeElapsed = Date.now() - parseInt(timestamp);
-            return timeElapsed < AUDIO_PERSISTENCE_DURATION;
+            return Date.now() - parseInt(timestamp) < AUDIO_PERSISTENCE_DURATION;
         }
 
         if (shouldKeepAudioEnabled()) {
@@ -174,7 +169,7 @@
                 const cachedResponse = await cache.match(url);
                 if (cachedResponse) return cachedResponse.url;
 
-                const response = await fetch(url, { mode: 'cors' });
+                const response = await fetch(url, { mode: 'cors', cache: 'force-cache' });
                 if (response.ok) {
                     await cache.put(url, response.clone());
                     return url;
@@ -195,6 +190,15 @@
             }
         }
 
+        // Debounce function for scroll handling
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
         Promise.all([
             fetch('https://raw.githubusercontent.com/ydvkrn/Personality/refs/heads/main/profiles.json')
                 .then(res => res.ok ? res.json() : Promise.reject('Profiles fetch failed'))
@@ -204,8 +208,8 @@
                 .catch(() => ({ reels: [] }))
         ])
         .then(([profilesData, reelsData]) => {
-            let profiles = profilesData.profiles || [];
-            let reels = reelsData.reels || [];
+            const profiles = profilesData.profiles || [];
+            const reels = reelsData.reels || [];
             const container = document.getElementById('reels-container');
             const profilePic = document.getElementById('profile-pic');
             const usernameText = document.getElementById('username-text');
@@ -216,77 +220,90 @@
                 return profiles.find(profile => profile.id === id) || { username: "Unknown", profile: "https://example.com/default-profile.jpg", verified: false };
             }
 
-            async function loadVideos(startIndex = 0, count = INITIAL_LOAD_COUNT) {
-                for (let i = startIndex; i < Math.min(startIndex + count, reels.length); i++) {
-                    const reel = reels[i];
-                    const isValid = await isValidVideoUrl(reel.media);
-                    if (!isValid) {
-                        console.log(`Skipping invalid/expired video: ${reel.media}`);
-                        continue;
+            async function createVideoElement(reel, index) {
+                const isValid = await isValidVideoUrl(reel.media);
+                if (!isValid) {
+                    console.log(`Skipping invalid/expired video: ${reel.media}`);
+                    return null;
+                }
+
+                const div = document.createElement('div');
+                div.className = 'video-container';
+
+                const video = document.createElement('video');
+                video.src = await fetchAndCache(reel.media) || '';
+                video.playsInline = true;
+                video.preload = 'metadata'; // Preload metadata initially
+                video.controls = false;
+                video.muted = true;
+                video.loop = true;
+
+                const loader = document.createElement('div');
+                loader.className = 'video-loader';
+                div.appendChild(loader);
+
+                video.addEventListener('canplaythrough', () => {
+                    loader.style.display = 'none'; // Hide when fully buffered
+                });
+                video.addEventListener('waiting', () => {
+                    loader.style.display = 'block'; // Show during buffering
+                });
+                video.addEventListener('error', () => {
+                    loader.style.display = 'block';
+                    loader.innerHTML = 'Error';
+                });
+                video.addEventListener('loadeddata', () => {
+                    video.dataset.loaded = 'true'; // Mark as loaded
+                });
+
+                video.addEventListener('click', () => {
+                    if (!isAudioEnabled) {
+                        isAudioEnabled = true;
+                        setAudioPersistence();
+                        document.querySelectorAll('video').forEach(v => v.muted = false);
+                        video.play().catch(error => console.log("Play error:", error));
                     }
+                });
 
-                    const div = document.createElement('div');
-                    div.className = 'video-container';
+                video.addEventListener('dblclick', (e) => {
+                    showLikeAnimation(div, e);
+                });
 
-                    const video = document.createElement('video');
-                    video.src = await fetchAndCache(reel.media) || '';
-                    video.autoplay = false;
-                    video.playsInline = true;
-                    video.preload = 'auto'; // Preload video for faster buffering
-                    video.controls = false;
-                    video.muted = true;
-                    video.loop = true;
+                div.appendChild(video);
+                video.dataset.index = index;
+                return div;
+            }
 
-                    const loader = document.createElement('div');
-                    loader.className = 'video-loader';
-                    loader.innerText = 'Buffering...';
-                    div.appendChild(loader);
-
-                    video.addEventListener('canplay', () => {
-                        loader.style.display = 'none'; // Hide loader when video is ready
-                    });
-                    video.addEventListener('waiting', () => {
-                        loader.style.display = 'flex'; // Show loader if buffering
-                    });
-                    video.addEventListener('error', () => {
-                        loader.innerText = 'Error loading video';
-                    });
-
-                    video.addEventListener('click', () => {
-                        if (!isAudioEnabled) {
-                            isAudioEnabled = true;
-                            setAudioPersistence();
-                            document.querySelectorAll('video').forEach(v => v.muted = false);
-                            video.play().catch(error => console.log("Play error:", error));
-                        }
-                    });
-
-                    video.addEventListener('dblclick', (e) => {
-                        showLikeAnimation(div, e);
-                    });
-
-                    div.appendChild(video);
-                    container.appendChild(div);
-                    video.dataset.index = i;
+            async function loadInitialVideos() {
+                for (let i = 0; i < Math.min(2, reels.length); i++) {
+                    const videoElement = await createVideoElement(reels[i], i);
+                    if (videoElement) container.appendChild(videoElement);
                 }
                 enableScrollPlayback();
             }
 
             function enableScrollPlayback() {
                 let currentVideo = null;
-                let observer = new IntersectionObserver((entries) => {
-                    entries.forEach(entry => {
+                const observer = new IntersectionObserver(debounce((entries) => {
+                    entries.forEach(async entry => {
                         const video = entry.target;
                         const index = parseInt(video.dataset.index);
+                        const loader = video.parentElement.querySelector('.video-loader');
 
                         if (entry.isIntersecting) {
                             if (currentVideo && currentVideo !== video) {
                                 currentVideo.pause();
                                 currentVideo.currentTime = 0;
+                                currentVideo.preload = 'metadata'; // Reset to minimal preload
                             }
                             currentVideo = video;
+                            video.preload = 'auto'; // Fully preload when in view
                             video.muted = !isAudioEnabled;
-                            video.play().catch(error => console.log("Play error:", error));
+
+                            if (video.dataset.loaded !== 'true') {
+                                loader.style.display = 'block';
+                            }
+                            video.play().catch(() => loader.style.display = 'block');
 
                             const profileData = getProfileById(reels[index].id);
                             fetchAndCache(profileData.profile).then(cachedUrl => {
@@ -297,16 +314,20 @@
                             title.innerText = fullTitle;
                             verifyBadge.style.display = profileData.verified ? "inline" : "none";
 
-                            if (index >= container.children.length - 2) {
-                                loadVideos(container.children.length);
+                            if (index === container.children.length - 1 && index < reels.length - 1) {
+                                const nextVideo = await createVideoElement(reels[index + 1], index + 1);
+                                if (nextVideo) container.appendChild(nextVideo);
                             }
-                        } else if (video === currentVideo) {
-                            video.pause();
-                            video.currentTime = 0;
-                            currentVideo = null;
+                        } else {
+                            video.preload = 'metadata'; // Reduce resource use when out of view
+                            if (video === currentVideo) {
+                                video.pause();
+                                video.currentTime = 0;
+                                currentVideo = null;
+                            }
                         }
                     });
-                }, { threshold: 0.9 });
+                }, 100), { threshold: 0.8 }); // Debounce with 100ms delay
 
                 document.querySelectorAll("video").forEach(video => observer.observe(video));
             }
@@ -330,11 +351,11 @@
                 }, 500);
             }
 
-            loadVideos();
+            loadInitialVideos();
         })
         .catch(error => {
             console.error('Error loading data:', error);
-            document.getElementById('reels-container').innerHTML = '<div style="color: white; text-align: center; padding-top: 50%;">Failed to load reels. Please refresh.</div>';
+            document.getElementById('reels-container').innerHTML = '<div style="color: white; text-align: center; padding-top: 50%;">Failed to load reels.</div>';
         });
     </script>
 </body>
