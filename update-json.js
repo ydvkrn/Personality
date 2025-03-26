@@ -1,7 +1,7 @@
 const axios = require('axios');
 const fs = require('fs');
 
-// JSON API URLs
+// JSON API URLs (अपनी API लिंक यहां डालो)
 const jsonURL1 = 'http://msmpr.free.nf/reels.json'; // Replace with real API URL
 const jsonURL2 = 'http://msmpr.free.nf/profiles.json'; // Replace with real API URL
 
