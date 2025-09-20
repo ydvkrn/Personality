@@ -11,7 +11,7 @@
             background-position: center;
             background-attachment: fixed;
             margin: 0;
-            overflow: hidden;
+            /* overflow: hidden; <- Yeh hata diya for scroll */
         }
         .shine-text {
             color: white;
@@ -23,9 +23,10 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh; /* height se min-height for scroll */
             overflow-y: auto;
             padding-top: 50px;
+            padding-bottom: 50px; /* Bottom padding add kiya */
         }
         .video-grid {
             display: grid;
@@ -43,6 +44,9 @@
     </style>
 </head>
 <body>
+    <!-- Hidden audio element for force play -->
+    <audio id="bg-audio" preload="auto" loop style="display: none;"></audio>
+    
     <div class="content-container">
         <div class='text-center'>
             <h1 class='text-4xl font-extrabold shine-text' id="welcome-text"></h1>
@@ -53,6 +57,52 @@
     </div>
 
     <script>
+        let globalAudio = null;
+        
+        // Audio force play function
+        function forcePlayAudio(audioUrl) {
+            globalAudio = document.getElementById('bg-audio');
+            globalAudio.src = audioUrl;
+            globalAudio.volume = 0.7; // Volume set kar diya
+            
+            // Method 1: Direct play attempt
+            globalAudio.play().then(() => {
+                console.log('Audio playing successfully');
+            }).catch(() => {
+                console.log('Autoplay blocked, trying alternative methods');
+                
+                // Method 2: Muted first, then unmute
+                globalAudio.muted = true;
+                globalAudio.play().then(() => {
+                    setTimeout(() => {
+                        globalAudio.muted = false;
+                        console.log('Audio unmuted after muted play');
+                    }, 1000);
+                }).catch(() => {
+                    // Method 3: User interaction required
+                    const events = ['click', 'touchstart', 'keydown', 'mousemove'];
+                    
+                    const playOnInteraction = () => {
+                        globalAudio.muted = false;
+                        globalAudio.play().then(() => {
+                            console.log('Audio playing after user interaction');
+                        }).catch(console.log);
+                        
+                        // Remove all listeners after first interaction
+                        events.forEach(event => {
+                            document.removeEventListener(event, playOnInteraction);
+                        });
+                    };
+                    
+                    events.forEach(event => {
+                        document.addEventListener(event, playOnInteraction, { once: true });
+                    });
+                    
+                    console.log('Audio will play on user interaction');
+                });
+            });
+        }
+
         fetch('data.json')
             .then(response => response.json())
             .then(data => {
@@ -72,7 +122,7 @@
                     // "Reel Of The Day" ke liye special handling
                     if (item.name === "Reel Of The Day" && item.reels && item.reels.length > 0) {
                         mediaElement = `
-                            <video class='w-64 h-64 object-cover rounded-lg mb-2' muted loop>
+                            <video class='w-64 h-64 object-cover rounded-lg mb-2' muted loop playsinline>
                                 <source src='${item.reels[0].media}' type='video/mp4'>
                                 Your browser does not support the video tag.
                             </video>
@@ -84,16 +134,16 @@
                                         item.media.toLowerCase().endsWith(".mov");
 
                         mediaElement = isVideo ?
-                            `<video class='w-64 h-64 object-cover rounded-lg mb-2' autoplay muted loop>
+                            `<video class='w-64 h-64 object-cover rounded-lg mb-2' autoplay muted loop playsinline>
                                 <source src='${item.media}' type='video/mp4'>
                                 Your browser does not support the video tag.
                             </video>` :
-                            `<img src='${item.media}' alt='${item.name} preview' class='w-64 h-64 object-cover rounded-lg mb-2'>`;
+                            `<img src='${item.media}' alt='${item.name} preview' class='w-64 h-64 object-cover rounded-lg mb-2' loading="lazy">`;
                     }
 
                     videoGrid.innerHTML += `
                         <div class='video-item'>
-                            <a href='${item.link}'>
+                            <a href='${item.link}' target="_blank">
                                 ${mediaElement}
                             </a>
                             <p class='font-semibold text-2xl shine-text'>${item.name}</p>
@@ -101,28 +151,41 @@
                     `;
                 });
 
-                // Audio force play
+                // Audio force play - improved method
                 if (data.content.audio) {
-                    const audio = new Audio(data.content.audio);
-                    audio.loop = true;
-                    
-                    // Try to play immediately
-                    audio.play().catch(() => {
-                        // If autoplay fails, try on first user interaction
-                        const playOnInteraction = () => {
-                            audio.play().catch(console.log);
-                            document.removeEventListener('click', playOnInteraction);
-                            document.removeEventListener('touchstart', playOnInteraction);
-                        };
-                        document.addEventListener('click', playOnInteraction);
-                        document.addEventListener('touchstart', playOnInteraction);
-                    });
+                    forcePlayAudio(data.content.audio);
                 }
+                
+                // Start video autoplay for videos that are in viewport
+                const videos = document.querySelectorAll('video');
+                videos.forEach(video => {
+                    video.addEventListener('loadeddata', () => {
+                        video.play().catch(console.log);
+                    });
+                });
             })
             .catch(err => {
                 console.error("Failed to load JSON:", err);
-                document.body.innerHTML = `<div class="content-container"><p class='shine-text'>Error loading content.</p></div>`;
+                document.body.innerHTML = `<div class="content-container"><p class='shine-text text-2xl'>Error loading content. Check console.</p></div>`;
             });
+
+        // Additional audio unlock attempts
+        document.addEventListener('DOMContentLoaded', () => {
+            // Try to unlock audio context on any user interaction
+            const unlockAudio = () => {
+                if (globalAudio && globalAudio.src) {
+                    globalAudio.muted = false;
+                    globalAudio.play().catch(console.log);
+                }
+            };
+            
+            ['touchend', 'click', 'keydown'].forEach(event => {
+                document.addEventListener(event, unlockAudio, { once: true });
+            });
+        });
+
+        // Prevent context menu for cleaner UX
+        document.addEventListener('contextmenu', e => e.preventDefault());
     </script>
 </body>
 </html>
