@@ -76,17 +76,17 @@
             opacity: 0.6;
         }
         
-        /* Media elements styling */
+        /* Clean media styling - no controls */
         .media-element {
-            width: 256px; /* w-64 */
-            height: 256px; /* h-64 */
+            width: 256px;
+            height: 256px;
             object-fit: cover;
             border-radius: 0.5rem;
             margin-bottom: 0.5rem;
             display: block;
         }
         
-        /* Video specific styling */
+        /* Video - completely clean */
         .video-element {
             width: 256px;
             height: 256px;
@@ -94,6 +94,45 @@
             border-radius: 0.5rem;
             margin-bottom: 0.5rem;
             display: block;
+            outline: none;
+            border: none;
+        }
+        
+        /* Hide video controls completely */
+        .video-element::-webkit-media-controls {
+            display: none !important;
+        }
+        
+        .video-element::-webkit-media-controls-panel {
+            display: none !important;
+        }
+        
+        .video-element::-webkit-media-controls-play-button {
+            display: none !important;
+        }
+        
+        .video-element::-webkit-media-controls-volume-slider {
+            display: none !important;
+        }
+        
+        .video-element::-webkit-media-controls-timeline {
+            display: none !important;
+        }
+        
+        .video-element::-webkit-media-controls-current-time-display {
+            display: none !important;
+        }
+        
+        .video-element::-webkit-media-controls-time-remaining-display {
+            display: none !important;
+        }
+        
+        .video-element::-webkit-media-controls-fullscreen-button {
+            display: none !important;
+        }
+        
+        .video-element::-webkit-media-controls-overlay-play-button {
+            display: none !important;
         }
         
         /* Hide scrollbar */
@@ -116,7 +155,7 @@
     </style>
 </head>
 <body>
-    <!-- Single audio element - no CORS -->
+    <!-- Single audio element -->
     <audio id="bg-audio" preload="auto" loop style="display: none;"></audio>
     
     <!-- Audio Control Button -->
@@ -129,71 +168,52 @@
     </div>
 
     <script>
-        // Simple Audio Control System
+        // Simple Audio Control
         class SimpleAudioControl {
             constructor() {
                 this.audio = document.getElementById('bg-audio');
                 this.toggleBtn = document.getElementById('audio-toggle');
                 this.icon = document.getElementById('audio-icon');
                 this.isPlaying = false;
-                this.audioUrl = '';
+                this.hasScrollTriggered = false;
                 
                 this.setupEventListeners();
             }
             
             setupEventListeners() {
-                // Button click to play/pause
                 this.toggleBtn.addEventListener('click', () => {
                     this.toggleAudio();
                 });
                 
-                // Audio events
                 this.audio.addEventListener('play', () => {
                     this.isPlaying = true;
                     this.updateIcon();
-                    console.log('🎵 Audio playing');
                 });
                 
                 this.audio.addEventListener('pause', () => {
                     this.isPlaying = false;
                     this.updateIcon();
-                    console.log('⏸️ Audio paused');
-                });
-                
-                this.audio.addEventListener('error', (e) => {
-                    console.log('❌ Audio error:', e);
-                    this.isPlaying = false;
-                    this.updateIcon();
-                });
-                
-                this.audio.addEventListener('loadstart', () => {
-                    console.log('📥 Audio loading...');
-                });
-                
-                this.audio.addEventListener('canplay', () => {
-                    console.log('✅ Audio ready to play');
                 });
             }
             
             setAudioUrl(url) {
-                this.audioUrl = url;
                 this.audio.src = url;
                 this.audio.volume = 0.7;
-                console.log('🔗 Audio URL set:', url);
             }
             
             toggleAudio() {
-                if (!this.audioUrl) {
-                    console.log('❌ No audio URL set');
-                    return;
-                }
-                
                 if (this.isPlaying) {
                     this.audio.pause();
                 } else {
-                    this.audio.play().catch(error => {
-                        console.log('❌ Audio play failed:', error);
-                    });
+                    this.audio.play().catch(console.log);
+                }
+            }
+            
+            // Trigger audio on scroll
+            triggerPlay() {
+                if (!this.hasScrollTriggered) {
+                    this.hasScrollTriggered = true;
+                    this.audio.play().catch(console.log);
                 }
             }
             
@@ -201,72 +221,85 @@
                 if (this.isPlaying) {
                     this.icon.className = 'fas fa-pause';
                     this.toggleBtn.classList.remove('paused');
-                    this.toggleBtn.title = 'Pause Audio';
                 } else {
                     this.icon.className = 'fas fa-play';
                     this.toggleBtn.classList.add('paused');
-                    this.toggleBtn.title = 'Play Audio';
                 }
             }
         }
         
-        // Initialize simple audio control
+        // Initialize audio control
         const audioControl = new SimpleAudioControl();
+        
+        // Scroll trigger system
+        let scrollTriggered = false;
+        let allVideos = [];
+        
+        function setupScrollTrigger() {
+            document.addEventListener('scroll', () => {
+                if (!scrollTriggered) {
+                    scrollTriggered = true;
+                    console.log('📜 Scroll detected - triggering media');
+                    
+                    // Trigger audio
+                    audioControl.triggerPlay();
+                    
+                    // Trigger all videos
+                    allVideos.forEach(video => {
+                        video.play().catch(console.log);
+                    });
+                }
+            }, { passive: true });
+            
+            // Also trigger on any container scroll
+            const container = document.getElementById('main-container');
+            if (container) {
+                container.addEventListener('scroll', () => {
+                    if (!scrollTriggered) {
+                        scrollTriggered = true;
+                        console.log('📜 Container scroll - triggering media');
+                        audioControl.triggerPlay();
+                        allVideos.forEach(video => {
+                            video.play().catch(console.log);
+                        });
+                    }
+                }, { passive: true });
+            }
+        }
 
-        // Enhanced media detection function
+        // Media detection
         function detectMediaType(url) {
-            if (!url) return 'unknown';
+            if (!url) return 'image';
             
             const urlLower = url.toLowerCase();
-            
-            // Video extensions
             const videoExtensions = ['.mp4', '.webm', '.mov', '.avi', '.mkv', '.wmv', '.flv', '.m4v'];
-            // Image extensions  
-            const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'];
             
-            // Check for video
             for (const ext of videoExtensions) {
                 if (urlLower.includes(ext)) {
                     return 'video';
                 }
             }
             
-            // Check for image
-            for (const ext of imageExtensions) {
-                if (urlLower.includes(ext)) {
-                    return 'image';
-                }
-            }
-            
-            // Check for video hosting patterns
-            if (urlLower.includes('youtube') || urlLower.includes('vimeo') || 
-                urlLower.includes('dailymotion') || urlLower.includes('.mp4')) {
-                return 'video';
-            }
-            
-            // Default to image if uncertain
             return 'image';
         }
         
-        // Create media element based on type
+        // Create clean media element
         function createMediaElement(item) {
             const mediaType = detectMediaType(item.media);
-            console.log(`📷 Media type detected: ${mediaType} for ${item.media}`);
             
             if (mediaType === 'video') {
                 return `
                     <video 
                         class="video-element" 
-                        autoplay 
                         muted 
                         loop 
                         playsinline 
-                        controls="false"
-                        onloadstart="console.log('Video loading:', '${item.name}')"
-                        oncanplay="console.log('Video can play:', '${item.name}')"
-                        onerror="console.log('Video error:', '${item.name}')">
+                        preload="metadata"
+                        disablepictureinpicture
+                        controlslist="nodownload noplaybackrate"
+                        oncontextmenu="return false;"
+                        style="pointer-events: auto;">
                         <source src="${item.media}" type="video/mp4">
-                        <p class="shine-text">Video not supported</p>
                     </video>
                 `;
             } else {
@@ -275,41 +308,39 @@
                         src="${item.media}" 
                         alt="${item.name || 'Media'}" 
                         class="media-element" 
-                        loading="lazy"
-                        onload="console.log('Image loaded:', '${item.name}')"
-                        onerror="console.log('Image error:', '${item.name}'); this.style.background='rgba(255,255,255,0.1)'; this.alt='Image not available';">
+                        loading="lazy">
                 `;
             }
         }
 
-        // Load JSON data and initialize page
+        // Initialize page
         async function initializePage() {
             try {
-                console.log('📋 Loading JSON data...');
-                
                 const response = await fetch('data.json');
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 
                 const data = await response.json();
-                console.log('✅ JSON loaded successfully');
                 
                 // Set background
                 if (data.content.backgroundImage) {
                     document.body.style.backgroundImage = `url('${data.content.backgroundImage}')`;
                 }
                 
-                // Set audio URL (but don't auto-play)
+                // Set audio
                 if (data.content.audio) {
                     audioControl.setAudioUrl(data.content.audio);
                 }
                 
                 // Render content
                 renderContent(data);
-                
-                // Load media items
                 loadMediaItems(data);
+                
+                // Setup scroll trigger after content loads
+                setTimeout(() => {
+                    setupScrollTrigger();
+                }, 500);
                 
             } catch (error) {
                 console.error('❌ JSON loading failed:', error);
@@ -337,11 +368,10 @@
                 return;
             }
             
-            videoGrid.innerHTML = ''; // Clear existing content
+            videoGrid.innerHTML = '';
+            allVideos = []; // Reset video array
             
-            data.content.mediaItems.forEach((item, index) => {
-                console.log(`🔄 Processing item ${index + 1}:`, item.name, item.media);
-                
+            data.content.mediaItems.forEach((item) => {
                 const mediaElement = createMediaElement(item);
                 
                 const itemDiv = document.createElement('div');
@@ -356,25 +386,29 @@
                 videoGrid.appendChild(itemDiv);
             });
             
-            // Force video play after DOM insertion
-            setTimeout(() => {
-                const videos = document.querySelectorAll('video');
-                videos.forEach((video, index) => {
-                    video.muted = true; // Ensure muted
-                    video.play().then(() => {
-                        console.log(`✅ Video ${index + 1} playing`);
-                    }).catch(error => {
-                        console.log(`❌ Video ${index + 1} failed:`, error);
-                    });
+            // Collect all video elements
+            const videos = document.querySelectorAll('.video-element');
+            videos.forEach(video => {
+                allVideos.push(video);
+                
+                // Try immediate autoplay first
+                video.play().then(() => {
+                    console.log('✅ Video auto-playing');
+                }).catch(() => {
+                    console.log('⏳ Video waiting for scroll trigger');
                 });
-            }, 100);
+                
+                // Remove any context menu or controls
+                video.addEventListener('contextmenu', e => e.preventDefault());
+                video.removeAttribute('controls');
+            });
         }
         
         function showErrorState() {
             const container = document.getElementById('main-container');
             container.innerHTML = `
                 <div class="text-center">
-                    <h1 class="text-3xl font-bold shine-text mb-4">❌ JSON Loading Error</h1>
+                    <h1 class="text-3xl font-bold shine-text mb-4">❌ Error</h1>
                     <p class="shine-text mb-4">Could not load data.json</p>
                     <button onclick="location.reload()" class="bg-white text-black px-4 py-2 rounded font-semibold">
                         🔄 Refresh
@@ -383,11 +417,8 @@
             `;
         }
 
-        // Initialize immediately
+        // Initialize
         initializePage();
-
-        // Additional initialization
-        document.addEventListener('DOMContentLoaded', initializePage);
 
         // Prevent context menu
         document.addEventListener('contextmenu', e => e.preventDefault());
