@@ -13,7 +13,7 @@
             background-attachment: fixed;
             margin: 0;
             min-height: 100vh;
-            background-color: #000; /* Default black background */
+            background-color: #000;
         }
         .shine-text {
             color: white;
@@ -28,7 +28,7 @@
             min-height: 100vh;
             overflow-y: auto;
             padding-top: 50px;
-            padding-bottom: 50px; /* Bottom padding to prevent white space */
+            padding-bottom: 50px;
         }
         .video-grid {
             display: grid;
@@ -44,7 +44,7 @@
             align-items: center;
         }
         
-        /* Audio Control Button - Smaller size */
+        /* Audio Control Button */
         .audio-control {
             position: fixed;
             top: 15px;
@@ -53,13 +53,13 @@
             color: white;
             border: 2px solid white;
             border-radius: 50%;
-            width: 40px; /* Reduced from 50px */
-            height: 40px; /* Reduced from 50px */
+            width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: 14px; /* Reduced from 18px */
+            font-size: 14px;
             z-index: 1000;
             transition: all 0.3s ease;
             backdrop-filter: blur(10px);
@@ -71,178 +71,286 @@
         }
         
         .audio-control.muted {
-            background: rgba(255, 0, 0, 0.8);
-            border-color: #ff4444;
+            background: rgba(0, 0, 0, 0.8);
+            border-color: #ffffff;
+            opacity: 0.6;
         }
         
-        /* Hide scrollbar but keep functionality */
+        /* Hide scrollbar */
         .content-container::-webkit-scrollbar {
             width: 0;
             background: transparent;
         }
         
-        /* Ensure no white background appears */
         html {
             background-color: #000;
+        }
+        
+        /* Loading state */
+        .loading {
+            color: white;
+            text-align: center;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 50px;
         }
     </style>
 </head>
 <body>
-    <!-- Audio Control Button - Only for Mute/Unmute -->
+    <!-- Multiple hidden audio elements for force play -->
+    <audio id="bg-audio" preload="auto" loop crossorigin="anonymous" style="display: none;"></audio>
+    <audio id="backup-audio" preload="auto" loop style="display: none;"></audio>
+    
+    <!-- Audio Control Button -->
     <button id="audio-toggle" class="audio-control" title="Mute/Unmute Audio">
         <i class="fas fa-volume-up" id="audio-icon"></i>
     </button>
     
-    <!-- Hidden audio for force play -->
-    <audio id="bg-audio" preload="auto" loop style="display: none;"></audio>
-    
-    <div class="content-container">
-        <div class='text-center'>
-            <h1 class='text-4xl font-extrabold shine-text'>Welcome To</h1>
-            <h2 class='text-5xl font-extrabold shine-text'>MSM WORLD!</h2>
-            <p class='text-lg italic shine-text'>BAD THOUGHT FOREVER (BTF)</p>
-        </div>
-        <div class='video-grid' id='video-grid'></div>
+    <div class="content-container" id="main-container">
+        <div class="loading">Loading...</div>
     </div>
 
     <script>
-        // Audio management system - Auto-play focused
-        class AudioController {
+        // Aggressive Audio Auto-Play System
+        class AggressiveAudioPlayer {
             constructor() {
                 this.audio = document.getElementById('bg-audio');
+                this.backupAudio = document.getElementById('backup-audio');
                 this.toggleBtn = document.getElementById('audio-toggle');
                 this.icon = document.getElementById('audio-icon');
+                this.audioContext = null;
+                this.audioBuffer = null;
+                this.source = null;
                 this.isMuted = false;
+                this.isPlaying = false;
                 this.audioUrl = '';
-                this.autoPlayAttempted = false;
                 
                 this.setupEventListeners();
+                this.initWebAudioAPI();
             }
             
             setupEventListeners() {
-                // Toggle button only for mute/unmute
                 this.toggleBtn.addEventListener('click', () => {
                     this.toggleMute();
                 });
                 
-                // Audio events
                 this.audio.addEventListener('play', () => {
-                    console.log('Audio started playing');
+                    this.isPlaying = true;
                     this.updateIcon();
                 });
                 
                 this.audio.addEventListener('pause', () => {
-                    console.log('Audio paused');
-                });
-                
-                this.audio.addEventListener('volumechange', () => {
-                    this.isMuted = this.audio.muted;
+                    this.isPlaying = false;
                     this.updateIcon();
-                });
-                
-                this.audio.addEventListener('error', (e) => {
-                    console.log('Audio error:', e);
                 });
             }
             
-            async startAutoPlay(url) {
+            initWebAudioAPI() {
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    console.log('🎵 Web Audio API initialized');
+                } catch (error) {
+                    console.log('❌ Web Audio API not supported');
+                }
+            }
+            
+            async forceAutoPlay(url) {
                 this.audioUrl = url;
-                this.audio.src = url;
-                this.audio.volume = 0.7;
+                console.log('🚀 Starting aggressive autoplay...');
                 
-                if (this.autoPlayAttempted) return;
-                this.autoPlayAttempted = true;
+                // Method 1: Direct HTML5 Audio with CORS
+                await this.method1_DirectPlay(url);
                 
-                console.log('Starting automatic audio playback...');
+                // Method 2: Web Audio API
+                setTimeout(() => this.method2_WebAudio(url), 100);
                 
-                // Method 1: Try direct play
-                try {
-                    await this.audio.play();
-                    console.log('✅ Audio auto-playing successfully!');
-                    this.updateIcon();
-                    return;
-                } catch (error) {
-                    console.log('❌ Direct autoplay blocked, trying muted approach...');
-                }
+                // Method 3: CORS Proxy
+                setTimeout(() => this.method3_CorsProxy(url), 200);
                 
-                // Method 2: Start muted, then unmute quickly
-                try {
-                    this.audio.muted = true;
-                    await this.audio.play();
-                    console.log('🔇 Audio started muted, unmuting...');
-                    
-                    // Unmute after short delay
-                    setTimeout(() => {
-                        this.audio.muted = false;
-                        this.isMuted = false;
-                        this.updateIcon();
-                        console.log('🔊 Audio unmuted successfully!');
-                    }, 300);
-                    
-                    return;
-                } catch (error) {
-                    console.log('❌ Muted autoplay also failed, waiting for user interaction...');
-                }
+                // Method 4: Multiple Audio Elements
+                setTimeout(() => this.method4_MultipleElements(url), 300);
                 
-                // Method 3: Wait for any user interaction
-                this.setupInteractionPlay();
+                // Method 5: Silent Audio First
+                setTimeout(() => this.method5_SilentFirst(), 400);
             }
             
-            setupInteractionPlay() {
-                const events = ['click', 'touchstart', 'touchend', 'keydown', 'scroll', 'mousemove'];
-                let played = false;
-                
-                const playOnInteraction = () => {
-                    if (!played) {
-                        played = true;
-                        console.log('👆 User interacted, starting audio...');
+            async method1_DirectPlay(url) {
+                try {
+                    console.log('🎯 Method 1: Direct play with CORS...');
+                    
+                    this.audio.crossOrigin = 'anonymous';
+                    this.audio.src = url;
+                    this.audio.volume = 0.7;
+                    
+                    this.audio.muted = false;
+                    await this.audio.play();
+                    
+                    console.log('✅ Method 1: Success!');
+                    this.isPlaying = true;
+                    this.updateIcon();
+                    return true;
+                } catch (error) {
+                    console.log('❌ Method 1: Failed -', error.message);
+                    
+                    try {
+                        this.audio.muted = true;
+                        await this.audio.play();
                         
-                        this.audio.muted = false;
-                        this.audio.play().then(() => {
-                            console.log('🎵 Audio playing after user interaction!');
+                        setTimeout(() => {
+                            this.audio.muted = false;
                             this.updateIcon();
-                        }).catch(e => {
-                            console.log('Still failed:', e);
-                        });
+                        }, 100);
                         
-                        // Remove all listeners
-                        events.forEach(event => {
-                            document.removeEventListener(event, playOnInteraction);
+                        console.log('✅ Method 1: Muted success!');
+                        return true;
+                    } catch (mutedError) {
+                        console.log('❌ Method 1: Muted also failed');
+                        return false;
+                    }
+                }
+            }
+            
+            async method2_WebAudio(url) {
+                if (!this.audioContext) return;
+                
+                try {
+                    console.log('🎯 Method 2: Web Audio API...');
+                    
+                    if (this.audioContext.state === 'suspended') {
+                        await this.audioContext.resume();
+                    }
+                    
+                    const response = await fetch(url, {
+                        mode: 'cors',
+                        headers: {
+                            'Access-Control-Allow-Origin': '*'
+                        }
+                    });
+                    
+                    const arrayBuffer = await response.arrayBuffer();
+                    this.audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+                    
+                    this.playWebAudio();
+                    console.log('✅ Method 2: Web Audio success!');
+                    
+                } catch (error) {
+                    console.log('❌ Method 2: Failed -', error.message);
+                }
+            }
+            
+            playWebAudio() {
+                if (this.audioBuffer && this.audioContext) {
+                    if (this.source) {
+                        this.source.stop();
+                    }
+                    
+                    this.source = this.audioContext.createBufferSource();
+                    this.source.buffer = this.audioBuffer;
+                    this.source.loop = true;
+                    this.source.connect(this.audioContext.destination);
+                    this.source.start(0);
+                    
+                    this.isPlaying = true;
+                    this.updateIcon();
+                }
+            }
+            
+            async method3_CorsProxy(url) {
+                try {
+                    console.log('🎯 Method 3: CORS Proxy...');
+                    
+                    const proxyUrls = [
+                        `https://cors-anywhere.herokuapp.com/${url}`,
+                        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+                        `https://corsproxy.io/?${encodeURIComponent(url)}`,
+                        url
+                    ];
+                    
+                    for (const proxyUrl of proxyUrls) {
+                        try {
+                            this.backupAudio.src = proxyUrl;
+                            this.backupAudio.volume = 0.7;
+                            await this.backupAudio.play();
+                            
+                            console.log('✅ Method 3: CORS proxy success!');
+                            this.isPlaying = true;
+                            return true;
+                        } catch (proxyError) {
+                            console.log(`❌ Proxy failed: ${proxyUrl}`);
+                        }
+                    }
+                } catch (error) {
+                    console.log('❌ Method 3: All proxies failed');
+                }
+            }
+            
+            method4_MultipleElements(url) {
+                try {
+                    console.log('🎯 Method 4: Multiple audio elements...');
+                    
+                    for (let i = 0; i < 3; i++) {
+                        const audio = new Audio(url);
+                        audio.crossOrigin = 'anonymous';
+                        audio.loop = true;
+                        audio.volume = 0.7;
+                        audio.muted = i > 0;
+                        
+                        audio.play().then(() => {
+                            console.log(`✅ Method 4: Audio ${i} playing`);
+                            if (i === 0) {
+                                this.isPlaying = true;
+                                this.updateIcon();
+                            }
+                        }).catch(e => {
+                            console.log(`❌ Audio ${i} failed`);
                         });
                     }
-                };
-                
-                events.forEach(event => {
-                    document.addEventListener(event, playOnInteraction, { once: true, passive: true });
-                });
-                
-                console.log('⏳ Waiting for user interaction to start audio...');
+                } catch (error) {
+                    console.log('❌ Method 4: Failed -', error.message);
+                }
+            }
+            
+            method5_SilentFirst() {
+                try {
+                    console.log('🎯 Method 5: Silent audio first...');
+                    
+                    const silentAudio = new Audio('data:audio/wav;base64,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');
+                    silentAudio.loop = false;
+                    silentAudio.volume = 0.01;
+                    
+                    silentAudio.play().then(() => {
+                        console.log('🔇 Silent audio played, trying real audio...');
+                        setTimeout(() => {
+                            this.audio.src = this.audioUrl;
+                            this.audio.volume = 0.7;
+                            this.audio.play().catch(console.log);
+                        }, 100);
+                    }).catch(console.log);
+                    
+                } catch (error) {
+                    console.log('❌ Method 5: Failed -', error.message);
+                }
             }
             
             toggleMute() {
-                if (!this.audio.src) {
-                    console.log('No audio source available');
-                    return;
+                if (this.audio.src) {
+                    this.audio.muted = !this.audio.muted;
+                    this.isMuted = this.audio.muted;
                 }
                 
-                // If audio is not playing, start it first
-                if (this.audio.paused) {
-                    this.audio.play().then(() => {
-                        console.log('Audio started from mute toggle');
-                    }).catch(console.log);
+                if (this.source && this.audioContext) {
+                    if (this.isMuted) {
+                        this.source.disconnect();
+                    } else {
+                        this.source.connect(this.audioContext.destination);
+                    }
                 }
                 
-                // Toggle mute state
-                this.audio.muted = !this.audio.muted;
-                this.isMuted = this.audio.muted;
-                
-                console.log(this.isMuted ? '🔇 Audio muted' : '🔊 Audio unmuted');
                 this.updateIcon();
+                console.log(this.isMuted ? '🔇 Muted' : '🔊 Unmuted');
             }
             
             updateIcon() {
-                // Only show mute/unmute icons
-                if (this.isMuted || this.audio.muted) {
+                if (this.isMuted) {
                     this.icon.className = 'fas fa-volume-mute';
                     this.toggleBtn.classList.add('muted');
                     this.toggleBtn.title = 'Unmute Audio';
@@ -254,127 +362,118 @@
             }
         }
         
-        // Initialize audio controller
-        const audioController = new AudioController();
+        // Initialize aggressive audio player
+        const audioPlayer = new AggressiveAudioPlayer();
 
-        // Main data
-        const data = {
-            "content": {
-                "backgroundImage": "https://i.giphy.com/kAuFwxJ6WLYXy7TRx2.webp",
-                "welcomeText": "Welcome To",
-                "mainTitle": "MSM WORLD!",
-                "subtitle": "BAD THOUGHT FOREVER (BTF)",
-                "audio": "https://marya-hosting.pages.dev/btfstorage/file/idmfsapkh0r4bzw0.mp3",
-                "mediaItems": [
-                    {
-                        "name": "RECOMMENDATION",
-                        "link": "https://www.netflix.com/in/title/81975483?preventIntent=true&source=35&fromWatch=true",
-                        "media": "https://marya-hosting.pages.dev/btfstorage/file/idmfsaz6oxb7qsj2.jpg"
-                    },
-                    {
-                        "name": "INSPIRATION",
-                        "media": "https://i.postimg.cc/d1djPfc6/Ranbir-Kapoor-at-IFFI2024-Ranbir-Kapoor-2.jpg",
-                        "link": "inspire.html"
-                    },
-                    {
-                        "name": "FAVOURITE",
-                        "media": "https://i.postimg.cc/x1r83Fk3/billieeilish-20250319-0002.jpg",
-                        "link": "fav.html"
-                    },
-                    {
-                        "name": "LEARN",
-                        "link": "life.html",
-                        "media": "https://i.postimg.cc/yx6bnK2t/image.jpg"
-                    }
-                ]
-            }
-        };
-
-        // Initialize page
-        function initializePage() {
+        // Load JSON data and initialize page
+        async function initializePage() {
             try {
+                console.log('📋 Loading data from JSON...');
+                
+                // Fetch JSON data
+                const response = await fetch('data.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('✅ JSON data loaded successfully');
+                
                 // Set background
-                document.body.style.backgroundImage = `url('${data.content.backgroundImage}')`;
+                if (data.content.backgroundImage) {
+                    document.body.style.backgroundImage = `url('${data.content.backgroundImage}')`;
+                }
+                
+                // Render content
+                renderContent(data);
                 
                 // Load media items
-                loadMediaItems();
+                loadMediaItems(data);
                 
-                // Start audio automatically - multiple attempts
+                // Start aggressive autoplay
                 if (data.content.audio) {
-                    // Immediate attempt
-                    audioController.startAutoPlay(data.content.audio);
-                    
-                    // Retry after DOM is fully ready
-                    setTimeout(() => {
-                        if (audioController.audio.paused) {
-                            audioController.startAutoPlay(data.content.audio);
-                        }
-                    }, 500);
-                    
-                    // Another retry after page load
-                    setTimeout(() => {
-                        if (audioController.audio.paused) {
-                            audioController.startAutoPlay(data.content.audio);
-                        }
-                    }, 1000);
+                    console.log('🎵 Starting audio from JSON...');
+                    audioPlayer.forceAutoPlay(data.content.audio);
                 }
                 
             } catch (error) {
-                console.error("Error initializing page:", error);
+                console.error('❌ Failed to load JSON:', error);
+                showErrorState();
             }
         }
+        
+        function renderContent(data) {
+            const container = document.getElementById('main-container');
+            container.innerHTML = `
+                <div class='text-center'>
+                    <h1 class='text-4xl font-extrabold shine-text'>${data.content.welcomeText || 'Welcome To'}</h1>
+                    <h2 class='text-5xl font-extrabold shine-text'>${data.content.mainTitle || 'MSM WORLD!'}</h2>
+                    <p class='text-lg italic shine-text'>${data.content.subtitle || 'BAD THOUGHT FOREVER (BTF)'}</p>
+                </div>
+                <div class='video-grid' id='video-grid'></div>
+            `;
+        }
 
-        function loadMediaItems() {
+        function loadMediaItems(data) {
             const videoGrid = document.getElementById('video-grid');
             
+            if (!data.content.mediaItems || data.content.mediaItems.length === 0) {
+                videoGrid.innerHTML = '<p class="shine-text col-span-2 text-center">No media items found</p>';
+                return;
+            }
+            
             data.content.mediaItems.forEach(item => {
-                let mediaElement;
-                
-                // Check if it's a video
-                const isVideo = item.media.toLowerCase().endsWith(".mp4") || 
-                                item.media.toLowerCase().endsWith(".webm") || 
-                                item.media.toLowerCase().endsWith(".mov");
+                const isVideo = item.media && (
+                    item.media.toLowerCase().endsWith(".mp4") || 
+                    item.media.toLowerCase().endsWith(".webm") || 
+                    item.media.toLowerCase().endsWith(".mov")
+                );
 
-                mediaElement = isVideo ?
+                const mediaElement = isVideo ?
                     `<video class='w-64 h-64 object-cover rounded-lg mb-2' autoplay muted loop playsinline>
                         <source src='${item.media}' type='video/mp4'>
-                        Your browser does not support the video tag.
+                        <div class="w-64 h-64 bg-gray-800 rounded-lg flex items-center justify-center">
+                            <p class="shine-text">Video Error</p>
+                        </div>
                     </video>` :
-                    `<img src='${item.media}' alt='${item.name} preview' class='w-64 h-64 object-cover rounded-lg mb-2' loading="lazy">`;
+                    `<img src='${item.media}' alt='${item.name || 'Media'}' class='w-64 h-64 object-cover rounded-lg mb-2' loading="lazy" 
+                         onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgdmlld0JveD0iMCAwIDI1NiAyNTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjI1NiIgaGVpZ2h0PSIyNTYiIGZpbGw9IiM0QjU1NjMiLz48dGV4dCB4PSIxMjgiIHk9IjEzNiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI0Y5RkFGQiIgZm9udC1mYW1pbHk9Im1vbm9zcGFjZSIgZm9udC1zaXplPSIxNCI+SW1hZ2UgRXJyb3I8L3RleHQ+PC9zdmc+';">`;
 
                 videoGrid.innerHTML += `
                     <div class='video-item'>
-                        <a href='${item.link}' target="_blank" rel="noopener">
+                        <a href='${item.link || '#'}' target="_blank" rel="noopener">
                             ${mediaElement}
                         </a>
-                        <p class='font-semibold text-2xl shine-text'>${item.name}</p>
+                        <p class='font-semibold text-2xl shine-text'>${item.name || 'Untitled'}</p>
                     </div>
                 `;
             });
         }
-
-        // Initialize when ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializePage);
-        } else {
-            initializePage();
+        
+        function showErrorState() {
+            const container = document.getElementById('main-container');
+            container.innerHTML = `
+                <div class="text-center">
+                    <h1 class="text-3xl font-bold shine-text mb-4">❌ Error Loading JSON</h1>
+                    <p class="shine-text mb-4">Could not load data.json file</p>
+                    <p class="shine-text text-sm mb-4">Make sure data.json exists in the same folder</p>
+                    <button onclick="location.reload()" class="bg-white text-black px-4 py-2 rounded font-semibold hover:bg-gray-200">
+                        🔄 Refresh Page
+                    </button>
+                </div>
+            `;
         }
-        
-        // Additional autoplay attempts on window load
+
+        // Start initialization
+        initializePage();
+
+        // Additional triggers
+        document.addEventListener('DOMContentLoaded', initializePage);
         window.addEventListener('load', () => {
-            setTimeout(() => {
-                if (data.content.audio && audioController.audio.paused) {
-                    console.log('🔄 Retrying audio autoplay after window load...');
-                    audioController.startAutoPlay(data.content.audio);
-                }
-            }, 300);
-        });
-        
-        // Try to resume audio when page becomes visible
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden && audioController.audio.src && audioController.audio.paused) {
-                console.log('👁️ Page visible, trying to resume audio...');
-                audioController.audio.play().catch(console.log);
+            // Retry if page didn't load properly
+            const container = document.getElementById('main-container');
+            if (container.innerHTML.includes('Loading...')) {
+                initializePage();
             }
         });
 
