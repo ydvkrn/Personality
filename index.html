@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Warning</title>
+    <title>MSM WORLD</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -11,7 +11,7 @@
             background-position: center;
             background-attachment: fixed;
             margin: 0;
-            /* overflow: hidden; <- Yeh hata diya for scroll */
+            min-height: 100vh;
         }
         .shine-text {
             color: white;
@@ -23,10 +23,9 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-height: 100vh; /* height se min-height for scroll */
+            min-height: 100vh;
             overflow-y: auto;
-            padding-top: 50px;
-            padding-bottom: 50px; /* Bottom padding add kiya */
+            padding: 50px 20px;
         }
         .video-grid {
             display: grid;
@@ -41,151 +40,283 @@
             flex-direction: column;
             align-items: center;
         }
+        
+        /* Media elements styling */
+        .media-element {
+            width: 100%;
+            height: 256px; /* w-64 equivalent */
+            object-fit: cover;
+            border-radius: 0.5rem;
+            margin-bottom: 8px;
+            transition: transform 0.3s ease;
+        }
+        
+        .media-element:hover {
+            transform: scale(1.05);
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .video-grid {
+                max-width: 90vw;
+                gap: 15px;
+            }
+            .media-element {
+                height: 200px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .content-container {
+                padding: 30px 10px;
+            }
+            .video-grid {
+                gap: 12px;
+            }
+            .media-element {
+                height: 160px;
+            }
+        }
     </style>
 </head>
 <body>
-    <!-- Hidden audio element for force play -->
+    <!-- Hidden audio for force play -->
     <audio id="bg-audio" preload="auto" loop style="display: none;"></audio>
     
     <div class="content-container">
-        <div class='text-center'>
-            <h1 class='text-4xl font-extrabold shine-text' id="welcome-text"></h1>
-            <h2 class='text-5xl font-extrabold shine-text' id="main-title"></h2>
-            <p class='text-lg italic shine-text' id="subtitle"></p>
+        <div class='text-center mb-8'>
+            <h1 class='text-4xl font-extrabold shine-text mb-2' id="welcome-text">Welcome To</h1>
+            <h2 class='text-5xl font-extrabold shine-text mb-4' id="main-title">MSM WORLD!</h2>
+            <p class='text-lg italic shine-text' id="subtitle">BAD THOUGHT FOREVER (BTF)</p>
         </div>
         <div class='video-grid' id='video-grid'></div>
     </div>
 
     <script>
+        // Audio force play system
         let globalAudio = null;
         
-        // Audio force play function
         function forcePlayAudio(audioUrl) {
             globalAudio = document.getElementById('bg-audio');
             globalAudio.src = audioUrl;
-            globalAudio.volume = 0.7; // Volume set kar diya
+            globalAudio.volume = 0.6;
             
-            // Method 1: Direct play attempt
-            globalAudio.play().then(() => {
-                console.log('Audio playing successfully');
-            }).catch(() => {
-                console.log('Autoplay blocked, trying alternative methods');
-                
-                // Method 2: Muted first, then unmute
-                globalAudio.muted = true;
-                globalAudio.play().then(() => {
-                    setTimeout(() => {
-                        globalAudio.muted = false;
-                        console.log('Audio unmuted after muted play');
-                    }, 1000);
-                }).catch(() => {
-                    // Method 3: User interaction required
-                    const events = ['click', 'touchstart', 'keydown', 'mousemove'];
+            // Multiple methods to ensure audio plays
+            const playAudio = async () => {
+                try {
+                    await globalAudio.play();
+                    console.log('Audio playing successfully');
+                } catch (error) {
+                    console.log('Direct play failed, trying muted first');
                     
-                    const playOnInteraction = () => {
-                        globalAudio.muted = false;
-                        globalAudio.play().then(() => {
-                            console.log('Audio playing after user interaction');
-                        }).catch(console.log);
+                    try {
+                        globalAudio.muted = true;
+                        await globalAudio.play();
                         
-                        // Remove all listeners after first interaction
-                        events.forEach(event => {
-                            document.removeEventListener(event, playOnInteraction);
-                        });
-                    };
+                        // Unmute after 1 second
+                        setTimeout(() => {
+                            globalAudio.muted = false;
+                            console.log('Audio unmuted');
+                        }, 1000);
+                        
+                    } catch (mutedError) {
+                        console.log('Muted play also failed, waiting for user interaction');
+                        setupUserInteractionAudio();
+                    }
+                }
+            };
+            
+            playAudio();
+        }
+        
+        function setupUserInteractionAudio() {
+            const events = ['click', 'touchstart', 'keydown', 'scroll', 'mousemove'];
+            let hasPlayed = false;
+            
+            const playOnInteraction = () => {
+                if (!hasPlayed && globalAudio) {
+                    hasPlayed = true;
+                    globalAudio.muted = false;
+                    globalAudio.play().then(() => {
+                        console.log('Audio playing after user interaction');
+                    }).catch(console.log);
                     
+                    // Remove all event listeners
                     events.forEach(event => {
-                        document.addEventListener(event, playOnInteraction, { once: true });
+                        document.removeEventListener(event, playOnInteraction);
                     });
-                    
-                    console.log('Audio will play on user interaction');
-                });
+                }
+            };
+            
+            events.forEach(event => {
+                document.addEventListener(event, playOnInteraction, { passive: true });
             });
         }
 
-        fetch('data.json')
-            .then(response => response.json())
-            .then(data => {
-                // Set background
-                document.body.style.backgroundImage = `url('${data.content.backgroundImage}')`;
+        // Main data loading and rendering
+        const data = {
+            "content": {
+                "backgroundImage": "https://i.giphy.com/kAuFwxJ6WLYXy7TRx2.webp",
+                "welcomeText": "Welcome To",
+                "mainTitle": "MSM WORLD!",
+                "subtitle": "BAD THOUGHT FOREVER (BTF)",
+                "audio": "https://marya-hosting.pages.dev/btfstorage/file/idmfsapkh0r4bzw0.mp3",
+                "mediaItems": [
+                    {
+                        "name": "RECOMMENDATION",
+                        "link": "https://www.netflix.com/in/title/81975483?preventIntent=true&source=35&fromWatch=true",
+                        "media": "https://marya-hosting.pages.dev/btfstorage/file/idmfsaz6oxb7qsj2.jpg"
+                    },
+                    {
+                        "name": "INSPIRATION",
+                        "media": "https://i.postimg.cc/d1djPfc6/Ranbir-Kapoor-at-IFFI2024-Ranbir-Kapoor-2.jpg",
+                        "link": "inspire.html"
+                    },
+                    {
+                        "name": "FAVOURITE",
+                        "media": "https://i.postimg.cc/x1r83Fk3/billieeilish-20250319-0002.jpg",
+                        "link": "fav.html"
+                    },
+                    {
+                        "name": "LEARN",
+                        "link": "life.html",
+                        "media": "https://i.postimg.cc/yx6bnK2t/image.jpg"
+                    }
+                ]
+            }
+        };
+
+        // Initialize page
+        function initializePage() {
+            try {
+                // Set background image
+                if (data.content.backgroundImage) {
+                    document.body.style.backgroundImage = `url('${data.content.backgroundImage}')`;
+                }
                 
                 // Set text content
                 document.getElementById("welcome-text").textContent = data.content.welcomeText;
                 document.getElementById("main-title").textContent = data.content.mainTitle;
                 document.getElementById("subtitle").textContent = data.content.subtitle;
 
-                const videoGrid = document.getElementById('video-grid');
-
-                data.content.mediaItems.forEach(item => {
-                    let mediaElement;
-
-                    // "Reel Of The Day" ke liye special handling
-                    if (item.name === "Reel Of The Day" && item.reels && item.reels.length > 0) {
-                        mediaElement = `
-                            <video class='w-64 h-64 object-cover rounded-lg mb-2' muted loop playsinline>
-                                <source src='${item.reels[0].media}' type='video/mp4'>
-                                Your browser does not support the video tag.
-                            </video>
-                        `;
-                    } else {
-                        // Check if media is video
-                        const isVideo = item.media.toLowerCase().endsWith(".mp4") || 
-                                        item.media.toLowerCase().endsWith(".webm") || 
-                                        item.media.toLowerCase().endsWith(".mov");
-
-                        mediaElement = isVideo ?
-                            `<video class='w-64 h-64 object-cover rounded-lg mb-2' autoplay muted loop playsinline>
-                                <source src='${item.media}' type='video/mp4'>
-                                Your browser does not support the video tag.
-                            </video>` :
-                            `<img src='${item.media}' alt='${item.name} preview' class='w-64 h-64 object-cover rounded-lg mb-2' loading="lazy">`;
-                    }
-
-                    videoGrid.innerHTML += `
-                        <div class='video-item'>
-                            <a href='${item.link}' target="_blank">
-                                ${mediaElement}
-                            </a>
-                            <p class='font-semibold text-2xl shine-text'>${item.name}</p>
-                        </div>
-                    `;
-                });
-
-                // Audio force play - improved method
+                // Load media items
+                loadMediaItems();
+                
+                // Start audio
                 if (data.content.audio) {
                     forcePlayAudio(data.content.audio);
                 }
                 
-                // Start video autoplay for videos that are in viewport
-                const videos = document.querySelectorAll('video');
-                videos.forEach(video => {
-                    video.addEventListener('loadeddata', () => {
-                        video.play().catch(console.log);
-                    });
-                });
-            })
-            .catch(err => {
-                console.error("Failed to load JSON:", err);
-                document.body.innerHTML = `<div class="content-container"><p class='shine-text text-2xl'>Error loading content. Check console.</p></div>`;
-            });
+            } catch (error) {
+                console.error("Error initializing page:", error);
+                showErrorState();
+            }
+        }
 
-        // Additional audio unlock attempts
-        document.addEventListener('DOMContentLoaded', () => {
-            // Try to unlock audio context on any user interaction
-            const unlockAudio = () => {
-                if (globalAudio && globalAudio.src) {
-                    globalAudio.muted = false;
-                    globalAudio.play().catch(console.log);
-                }
-            };
+        function loadMediaItems() {
+            const videoGrid = document.getElementById('video-grid');
             
-            ['touchend', 'click', 'keydown'].forEach(event => {
-                document.addEventListener(event, unlockAudio, { once: true });
+            if (!data.content.mediaItems || data.content.mediaItems.length === 0) {
+                videoGrid.innerHTML = '<p class="shine-text col-span-2 text-center">No media items available</p>';
+                return;
+            }
+
+            videoGrid.innerHTML = ''; // Clear existing content
+
+            data.content.mediaItems.forEach((item, index) => {
+                try {
+                    const mediaElement = createMediaElement(item);
+                    const videoItem = document.createElement('div');
+                    videoItem.className = 'video-item';
+                    
+                    videoItem.innerHTML = `
+                        <a href='${item.link || '#'}' target="_blank" rel="noopener noreferrer">
+                            ${mediaElement}
+                        </a>
+                        <p class='font-semibold text-2xl shine-text text-center'>${item.name || 'Untitled'}</p>
+                    `;
+
+                    videoGrid.appendChild(videoItem);
+                    
+                } catch (error) {
+                    console.error(`Error loading media item ${index}:`, error);
+                }
             });
+        }
+
+        function createMediaElement(item) {
+            if (!item.media) {
+                return '<div class="media-element bg-gray-700 flex items-center justify-center"><p class="shine-text">No Media</p></div>';
+            }
+            
+            const mediaUrl = item.media;
+            const altText = item.name || 'Media preview';
+            
+            // Check if it's a video file
+            const videoExtensions = ['.mp4', '.webm', '.mov', '.avi', '.mkv'];
+            const isVideo = videoExtensions.some(ext => 
+                mediaUrl.toLowerCase().includes(ext)
+            );
+
+            if (isVideo) {
+                return `
+                    <video class='media-element' autoplay muted loop playsinline>
+                        <source src='${mediaUrl}' type='video/mp4'>
+                        <div class="bg-gray-700 w-full h-full flex items-center justify-center">
+                            <p class="shine-text">Video not supported</p>
+                        </div>
+                    </video>
+                `;
+            } else {
+                return `
+                    <img src='${mediaUrl}' 
+                         alt='${altText}' 
+                         class='media-element' 
+                         loading="lazy"
+                         onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgdmlld0JveD0iMCAwIDI1NiAyNTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjI1NiIgaGVpZ2h0PSIyNTYiIGZpbGw9IiM0QjU1NjMiLz48dGV4dCB4PSIxMjgiIHk9IjEzNiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI0Y5RkFGQiIgZm9udC1mYW1pbHk9Im1vbm9zcGFjZSIgZm9udC1zaXplPSIxNCI+SW1hZ2UgTm90IEZvdW5kPC90ZXh0Pjwvc3ZnPg=='; this.alt='Image not available';">
+                `;
+            }
+        }
+
+        function showErrorState() {
+            document.body.innerHTML = `
+                <div class="content-container">
+                    <div class="text-center">
+                        <h1 class="text-3xl font-bold shine-text mb-4">Error Loading Content</h1>
+                        <p class="shine-text mb-4">Sorry, there was an issue loading the page content.</p>
+                        <button onclick="location.reload()" class="bg-white text-black px-4 py-2 rounded font-semibold hover:bg-gray-200">
+                            Refresh Page
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Initialize page when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializePage);
+        } else {
+            initializePage();
+        }
+
+        // Additional audio unlock attempts on page interaction
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && globalAudio && globalAudio.paused) {
+                globalAudio.play().catch(console.log);
+            }
         });
 
-        // Prevent context menu for cleaner UX
+        // Prevent context menu
         document.addEventListener('contextmenu', e => e.preventDefault());
+        
+        // Handle page errors
+        window.addEventListener('error', (e) => {
+            console.error('Page error:', e.error);
+        });
+
+        window.addEventListener('unhandledrejection', (e) => {
+            console.error('Unhandled promise rejection:', e.reason);
+        });
     </script>
 </body>
 </html>
