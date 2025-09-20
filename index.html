@@ -70,10 +70,30 @@
             transform: scale(1.1);
         }
         
-        .audio-control.muted {
+        .audio-control.paused {
             background: rgba(0, 0, 0, 0.8);
             border-color: #ffffff;
             opacity: 0.6;
+        }
+        
+        /* Media elements styling */
+        .media-element {
+            width: 256px; /* w-64 */
+            height: 256px; /* h-64 */
+            object-fit: cover;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        
+        /* Video specific styling */
+        .video-element {
+            width: 256px;
+            height: 256px;
+            object-fit: cover;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            display: block;
         }
         
         /* Hide scrollbar */
@@ -93,430 +113,174 @@
             font-family: 'Courier New', Courier, monospace;
             padding: 50px;
         }
-        
-        /* Audio status indicator */
-        .audio-status {
-            position: fixed;
-            top: 70px;
-            right: 15px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 10px;
-            z-index: 999;
-            display: none;
-        }
     </style>
 </head>
 <body>
-    <!-- Multiple hidden audio elements for maximum compatibility -->
-    <audio id="audio1" preload="auto" loop crossorigin="anonymous" style="display: none;"></audio>
-    <audio id="audio2" preload="auto" loop style="display: none;"></audio>
-    <audio id="audio3" preload="auto" loop crossorigin="use-credentials" style="display: none;"></audio>
-    <audio id="audio4" preload="auto" loop style="display: none;"></audio>
-    <audio id="audio5" preload="auto" loop style="display: none;"></audio>
+    <!-- Single audio element - no CORS -->
+    <audio id="bg-audio" preload="auto" loop style="display: none;"></audio>
     
     <!-- Audio Control Button -->
-    <button id="audio-toggle" class="audio-control" title="Mute/Unmute Audio">
-        <i class="fas fa-volume-up" id="audio-icon"></i>
+    <button id="audio-toggle" class="audio-control paused" title="Play/Pause Audio">
+        <i class="fas fa-play" id="audio-icon"></i>
     </button>
-    
-    <!-- Audio status indicator -->
-    <div id="audio-status" class="audio-status">Trying to play audio...</div>
     
     <div class="content-container" id="main-container">
         <div class="loading">Loading...</div>
     </div>
 
     <script>
-        // Ultra-Aggressive Audio System with Multiple Fallbacks
-        class UltraAggressiveAudio {
+        // Simple Audio Control System
+        class SimpleAudioControl {
             constructor() {
-                this.audioElements = [
-                    document.getElementById('audio1'),
-                    document.getElementById('audio2'),
-                    document.getElementById('audio3'),
-                    document.getElementById('audio4'),
-                    document.getElementById('audio5')
-                ];
-                this.currentAudio = null;
+                this.audio = document.getElementById('bg-audio');
                 this.toggleBtn = document.getElementById('audio-toggle');
                 this.icon = document.getElementById('audio-icon');
-                this.statusDiv = document.getElementById('audio-status');
-                this.audioContext = null;
-                this.isMuted = false;
                 this.isPlaying = false;
                 this.audioUrl = '';
-                this.retryCount = 0;
-                this.maxRetries = 10;
                 
-                this.initializeAudioContext();
                 this.setupEventListeners();
             }
             
-            initializeAudioContext() {
-                try {
-                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    console.log('🎵 AudioContext created');
-                } catch (error) {
-                    console.log('❌ AudioContext failed');
-                }
-            }
-            
             setupEventListeners() {
+                // Button click to play/pause
                 this.toggleBtn.addEventListener('click', () => {
-                    this.toggleMute();
+                    this.toggleAudio();
                 });
                 
-                // Setup listeners for all audio elements
-                this.audioElements.forEach((audio, index) => {
-                    audio.addEventListener('play', () => {
-                        console.log(`✅ Audio ${index + 1} started playing`);
-                        this.currentAudio = audio;
-                        this.isPlaying = true;
-                        this.updateIcon();
-                        this.hideStatus();
-                    });
-                    
-                    audio.addEventListener('error', (e) => {
-                        console.log(`❌ Audio ${index + 1} error:`, e.target.error);
-                    });
-                    
-                    audio.addEventListener('loadstart', () => {
-                        console.log(`📥 Audio ${index + 1} loading...`);
-                    });
-                    
-                    audio.addEventListener('canplay', () => {
-                        console.log(`✅ Audio ${index + 1} can play`);
-                    });
-                });
-            }
-            
-            showStatus(message) {
-                this.statusDiv.textContent = message;
-                this.statusDiv.style.display = 'block';
-                setTimeout(() => this.hideStatus(), 3000);
-            }
-            
-            hideStatus() {
-                this.statusDiv.style.display = 'none';
-            }
-            
-            async ultraForcePlay(url) {
-                this.audioUrl = url;
-                this.retryCount = 0;
-                
-                console.log('🚀 ULTRA AGGRESSIVE AUDIO STARTING...');
-                console.log('🔗 Audio URL:', url);
-                
-                this.showStatus('Attempting audio playback...');
-                
-                // Method 1: Multiple Direct Attempts
-                await this.method1_MultipleDirectAttempts(url);
-                
-                // Method 2: CORS Variations
-                setTimeout(() => this.method2_CorsVariations(url), 200);
-                
-                // Method 3: Proxy Attempts
-                setTimeout(() => this.method3_ProxyAttempts(url), 400);
-                
-                // Method 4: Web Audio API
-                setTimeout(() => this.method4_WebAudioAPI(url), 600);
-                
-                // Method 5: User Interaction Setup
-                setTimeout(() => this.method5_UserInteraction(url), 800);
-                
-                // Method 6: Retry Loop
-                setTimeout(() => this.method6_RetryLoop(url), 1000);
-                
-                // Method 7: Emergency Fallback
-                setTimeout(() => this.method7_EmergencyFallback(url), 2000);
-            }
-            
-            async method1_MultipleDirectAttempts(url) {
-                console.log('🎯 Method 1: Multiple Direct Attempts');
-                
-                for (let i = 0; i < this.audioElements.length; i++) {
-                    const audio = this.audioElements[i];
-                    
-                    try {
-                        // Different configurations for each element
-                        audio.src = url;
-                        audio.volume = 0.7;
-                        audio.preload = 'auto';
-                        
-                        if (i === 0) {
-                            // First: Try unmuted
-                            audio.muted = false;
-                        } else if (i === 1) {
-                            // Second: Try muted then unmute
-                            audio.muted = true;
-                        } else {
-                            // Others: Mix of settings
-                            audio.muted = i % 2 === 0;
-                        }
-                        
-                        await audio.play();
-                        
-                        if (i === 1 && audio.muted) {
-                            setTimeout(() => {
-                                audio.muted = false;
-                                this.updateIcon();
-                            }, 500);
-                        }
-                        
-                        console.log(`✅ Direct attempt ${i + 1} succeeded`);
-                        return true;
-                        
-                    } catch (error) {
-                        console.log(`❌ Direct attempt ${i + 1} failed:`, error.message);
-                    }
-                }
-            }
-            
-            async method2_CorsVariations(url) {
-                console.log('🎯 Method 2: CORS Variations');
-                
-                const corsSettings = [
-                    { crossOrigin: 'anonymous' },
-                    { crossOrigin: 'use-credentials' },
-                    { crossOrigin: null },
-                    {}
-                ];
-                
-                for (let i = 0; i < corsSettings.length && i < this.audioElements.length; i++) {
-                    const audio = this.audioElements[i];
-                    const settings = corsSettings[i];
-                    
-                    try {
-                        if (settings.crossOrigin !== undefined) {
-                            audio.crossOrigin = settings.crossOrigin;
-                        }
-                        
-                        if (!audio.src) {
-                            audio.src = url;
-                            audio.volume = 0.7;
-                        }
-                        
-                        await audio.play();
-                        console.log(`✅ CORS variation ${i + 1} succeeded`);
-                        return true;
-                        
-                    } catch (error) {
-                        console.log(`❌ CORS variation ${i + 1} failed`);
-                    }
-                }
-            }
-            
-            async method3_ProxyAttempts(url) {
-                console.log('🎯 Method 3: Proxy Attempts');
-                
-                const proxies = [
-                    url, // Original first
-                    `https://cors-anywhere.herokuapp.com/${url}`,
-                    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-                    `https://corsproxy.io/?${encodeURIComponent(url)}`,
-                    `https://cors-proxy.htmldriven.com/?url=${encodeURIComponent(url)}`
-                ];
-                
-                for (let i = 0; i < proxies.length && i < this.audioElements.length; i++) {
-                    const audio = this.audioElements[i];
-                    const proxyUrl = proxies[i];
-                    
-                    try {
-                        audio.src = proxyUrl;
-                        audio.volume = 0.7;
-                        await audio.play();
-                        
-                        console.log(`✅ Proxy ${i + 1} succeeded`);
-                        return true;
-                        
-                    } catch (error) {
-                        console.log(`❌ Proxy ${i + 1} failed`);
-                    }
-                }
-            }
-            
-            async method4_WebAudioAPI(url) {
-                if (!this.audioContext) return;
-                
-                console.log('🎯 Method 4: Web Audio API');
-                
-                try {
-                    if (this.audioContext.state === 'suspended') {
-                        await this.audioContext.resume();
-                    }
-                    
-                    const response = await fetch(url, {
-                        mode: 'cors',
-                        credentials: 'omit'
-                    });
-                    
-                    const arrayBuffer = await response.arrayBuffer();
-                    const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
-                    
-                    const source = this.audioContext.createBufferSource();
-                    source.buffer = audioBuffer;
-                    source.loop = true;
-                    source.connect(this.audioContext.destination);
-                    source.start();
-                    
+                // Audio events
+                this.audio.addEventListener('play', () => {
                     this.isPlaying = true;
                     this.updateIcon();
-                    console.log('✅ Web Audio API succeeded');
-                    
-                } catch (error) {
-                    console.log('❌ Web Audio API failed:', error.message);
-                }
-            }
-            
-            method5_UserInteraction(url) {
-                console.log('🎯 Method 5: User Interaction Setup');
+                    console.log('🎵 Audio playing');
+                });
                 
-                const events = ['click', 'touchstart', 'touchend', 'keydown', 'scroll', 'mousemove', 'mouseenter'];
-                let played = false;
+                this.audio.addEventListener('pause', () => {
+                    this.isPlaying = false;
+                    this.updateIcon();
+                    console.log('⏸️ Audio paused');
+                });
                 
-                const playOnInteraction = async () => {
-                    if (played || this.isPlaying) return;
-                    played = true;
-                    
-                    console.log('👆 User interaction detected, playing audio...');
-                    this.showStatus('Playing audio after interaction...');
-                    
-                    for (const audio of this.audioElements) {
-                        try {
-                            if (!audio.src) {
-                                audio.src = url;
-                                audio.volume = 0.7;
-                            }
-                            audio.muted = false;
-                            await audio.play();
-                            console.log('✅ User interaction audio succeeded');
-                            break;
-                        } catch (error) {
-                            console.log('❌ User interaction attempt failed');
-                        }
-                    }
-                    
-                    // Remove listeners
-                    events.forEach(event => {
-                        document.removeEventListener(event, playOnInteraction);
-                    });
-                };
+                this.audio.addEventListener('error', (e) => {
+                    console.log('❌ Audio error:', e);
+                    this.isPlaying = false;
+                    this.updateIcon();
+                });
                 
-                events.forEach(event => {
-                    document.addEventListener(event, playOnInteraction, { once: true, passive: true });
+                this.audio.addEventListener('loadstart', () => {
+                    console.log('📥 Audio loading...');
+                });
+                
+                this.audio.addEventListener('canplay', () => {
+                    console.log('✅ Audio ready to play');
                 });
             }
             
-            method6_RetryLoop(url) {
-                console.log('🎯 Method 6: Retry Loop');
-                
-                const retryInterval = setInterval(() => {
-                    if (this.isPlaying || this.retryCount >= this.maxRetries) {
-                        clearInterval(retryInterval);
-                        return;
-                    }
-                    
-                    this.retryCount++;
-                    console.log(`🔄 Retry attempt ${this.retryCount}/${this.maxRetries}`);
-                    
-                    const audio = this.audioElements[this.retryCount % this.audioElements.length];
-                    audio.src = url;
-                    audio.volume = 0.7;
-                    audio.muted = this.retryCount > 5; // Try muted after 5 attempts
-                    
-                    audio.play().then(() => {
-                        if (audio.muted) {
-                            setTimeout(() => {
-                                audio.muted = false;
-                                this.updateIcon();
-                            }, 300);
-                        }
-                        clearInterval(retryInterval);
-                    }).catch(() => {
-                        console.log(`❌ Retry ${this.retryCount} failed`);
-                    });
-                    
-                }, 1000);
+            setAudioUrl(url) {
+                this.audioUrl = url;
+                this.audio.src = url;
+                this.audio.volume = 0.7;
+                console.log('🔗 Audio URL set:', url);
             }
             
-            method7_EmergencyFallback(url) {
-                if (this.isPlaying) return;
-                
-                console.log('🎯 Method 7: Emergency Fallback');
-                this.showStatus('Emergency audio fallback...');
-                
-                // Create new audio element dynamically
-                const emergencyAudio = new Audio();
-                emergencyAudio.src = url;
-                emergencyAudio.volume = 0.7;
-                emergencyAudio.loop = true;
-                emergencyAudio.crossOrigin = 'anonymous';
-                
-                // Try multiple times with different settings
-                let attempts = 0;
-                const tryEmergency = () => {
-                    if (attempts >= 5 || this.isPlaying) return;
-                    
-                    attempts++;
-                    emergencyAudio.muted = attempts > 2;
-                    
-                    emergencyAudio.play().then(() => {
-                        console.log('✅ Emergency fallback succeeded');
-                        this.currentAudio = emergencyAudio;
-                        this.isPlaying = true;
-                        
-                        if (emergencyAudio.muted) {
-                            setTimeout(() => {
-                                emergencyAudio.muted = false;
-                                this.updateIcon();
-                            }, 500);
-                        }
-                    }).catch(() => {
-                        console.log(`❌ Emergency attempt ${attempts} failed`);
-                        setTimeout(tryEmergency, 1000);
-                    });
-                };
-                
-                tryEmergency();
-            }
-            
-            toggleMute() {
-                if (this.currentAudio) {
-                    this.currentAudio.muted = !this.currentAudio.muted;
-                    this.isMuted = this.currentAudio.muted;
-                } else {
-                    // Toggle all audio elements
-                    this.audioElements.forEach(audio => {
-                        if (audio.src) {
-                            audio.muted = !this.isMuted;
-                        }
-                    });
-                    this.isMuted = !this.isMuted;
+            toggleAudio() {
+                if (!this.audioUrl) {
+                    console.log('❌ No audio URL set');
+                    return;
                 }
                 
-                this.updateIcon();
-                console.log(this.isMuted ? '🔇 All audio muted' : '🔊 All audio unmuted');
-                this.showStatus(this.isMuted ? 'Audio muted' : 'Audio unmuted');
+                if (this.isPlaying) {
+                    this.audio.pause();
+                } else {
+                    this.audio.play().catch(error => {
+                        console.log('❌ Audio play failed:', error);
+                    });
+                }
             }
             
             updateIcon() {
-                if (this.isMuted) {
-                    this.icon.className = 'fas fa-volume-mute';
-                    this.toggleBtn.classList.add('muted');
-                    this.toggleBtn.title = 'Unmute Audio';
+                if (this.isPlaying) {
+                    this.icon.className = 'fas fa-pause';
+                    this.toggleBtn.classList.remove('paused');
+                    this.toggleBtn.title = 'Pause Audio';
                 } else {
-                    this.icon.className = 'fas fa-volume-up';
-                    this.toggleBtn.classList.remove('muted');
-                    this.toggleBtn.title = 'Mute Audio';
+                    this.icon.className = 'fas fa-play';
+                    this.toggleBtn.classList.add('paused');
+                    this.toggleBtn.title = 'Play Audio';
                 }
             }
         }
         
-        // Initialize ultra-aggressive audio system
-        const ultraAudio = new UltraAggressiveAudio();
+        // Initialize simple audio control
+        const audioControl = new SimpleAudioControl();
+
+        // Enhanced media detection function
+        function detectMediaType(url) {
+            if (!url) return 'unknown';
+            
+            const urlLower = url.toLowerCase();
+            
+            // Video extensions
+            const videoExtensions = ['.mp4', '.webm', '.mov', '.avi', '.mkv', '.wmv', '.flv', '.m4v'];
+            // Image extensions  
+            const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'];
+            
+            // Check for video
+            for (const ext of videoExtensions) {
+                if (urlLower.includes(ext)) {
+                    return 'video';
+                }
+            }
+            
+            // Check for image
+            for (const ext of imageExtensions) {
+                if (urlLower.includes(ext)) {
+                    return 'image';
+                }
+            }
+            
+            // Check for video hosting patterns
+            if (urlLower.includes('youtube') || urlLower.includes('vimeo') || 
+                urlLower.includes('dailymotion') || urlLower.includes('.mp4')) {
+                return 'video';
+            }
+            
+            // Default to image if uncertain
+            return 'image';
+        }
+        
+        // Create media element based on type
+        function createMediaElement(item) {
+            const mediaType = detectMediaType(item.media);
+            console.log(`📷 Media type detected: ${mediaType} for ${item.media}`);
+            
+            if (mediaType === 'video') {
+                return `
+                    <video 
+                        class="video-element" 
+                        autoplay 
+                        muted 
+                        loop 
+                        playsinline 
+                        controls="false"
+                        onloadstart="console.log('Video loading:', '${item.name}')"
+                        oncanplay="console.log('Video can play:', '${item.name}')"
+                        onerror="console.log('Video error:', '${item.name}')">
+                        <source src="${item.media}" type="video/mp4">
+                        <p class="shine-text">Video not supported</p>
+                    </video>
+                `;
+            } else {
+                return `
+                    <img 
+                        src="${item.media}" 
+                        alt="${item.name || 'Media'}" 
+                        class="media-element" 
+                        loading="lazy"
+                        onload="console.log('Image loaded:', '${item.name}')"
+                        onerror="console.log('Image error:', '${item.name}'); this.style.background='rgba(255,255,255,0.1)'; this.alt='Image not available';">
+                `;
+            }
+        }
 
         // Load JSON data and initialize page
         async function initializePage() {
@@ -530,11 +294,15 @@
                 
                 const data = await response.json();
                 console.log('✅ JSON loaded successfully');
-                console.log('🔗 Audio URL from JSON:', data.content.audio);
                 
                 // Set background
                 if (data.content.backgroundImage) {
                     document.body.style.backgroundImage = `url('${data.content.backgroundImage}')`;
+                }
+                
+                // Set audio URL (but don't auto-play)
+                if (data.content.audio) {
+                    audioControl.setAudioUrl(data.content.audio);
                 }
                 
                 // Render content
@@ -542,32 +310,6 @@
                 
                 // Load media items
                 loadMediaItems(data);
-                
-                // Start ULTRA AGGRESSIVE AUDIO
-                if (data.content.audio) {
-                    console.log('🎵 Starting ULTRA AGGRESSIVE audio playback...');
-                    
-                    // Multiple immediate attempts
-                    ultraAudio.ultraForcePlay(data.content.audio);
-                    
-                    // Additional retry after DOM fully loads
-                    setTimeout(() => {
-                        if (!ultraAudio.isPlaying) {
-                            console.log('🔄 Retrying audio after delay...');
-                            ultraAudio.ultraForcePlay(data.content.audio);
-                        }
-                    }, 1000);
-                    
-                    // Final retry
-                    setTimeout(() => {
-                        if (!ultraAudio.isPlaying) {
-                            console.log('🔄 Final audio retry...');
-                            ultraAudio.ultraForcePlay(data.content.audio);
-                        }
-                    }, 3000);
-                } else {
-                    console.log('❌ No audio URL found in JSON');
-                }
                 
             } catch (error) {
                 console.error('❌ JSON loading failed:', error);
@@ -595,28 +337,37 @@
                 return;
             }
             
-            data.content.mediaItems.forEach(item => {
-                const isVideo = item.media && (
-                    item.media.toLowerCase().endsWith(".mp4") || 
-                    item.media.toLowerCase().endsWith(".webm") || 
-                    item.media.toLowerCase().endsWith(".mov")
-                );
-
-                const mediaElement = isVideo ?
-                    `<video class='w-64 h-64 object-cover rounded-lg mb-2' autoplay muted loop playsinline>
-                        <source src='${item.media}' type='video/mp4'>
-                    </video>` :
-                    `<img src='${item.media}' alt='${item.name || 'Media'}' class='w-64 h-64 object-cover rounded-lg mb-2' loading="lazy">`;
-
-                videoGrid.innerHTML += `
-                    <div class='video-item'>
-                        <a href='${item.link || '#'}' target="_blank" rel="noopener">
-                            ${mediaElement}
-                        </a>
-                        <p class='font-semibold text-2xl shine-text'>${item.name || 'Untitled'}</p>
-                    </div>
+            videoGrid.innerHTML = ''; // Clear existing content
+            
+            data.content.mediaItems.forEach((item, index) => {
+                console.log(`🔄 Processing item ${index + 1}:`, item.name, item.media);
+                
+                const mediaElement = createMediaElement(item);
+                
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'video-item';
+                itemDiv.innerHTML = `
+                    <a href='${item.link || '#'}' target="_blank" rel="noopener">
+                        ${mediaElement}
+                    </a>
+                    <p class='font-semibold text-2xl shine-text'>${item.name || 'Untitled'}</p>
                 `;
+                
+                videoGrid.appendChild(itemDiv);
             });
+            
+            // Force video play after DOM insertion
+            setTimeout(() => {
+                const videos = document.querySelectorAll('video');
+                videos.forEach((video, index) => {
+                    video.muted = true; // Ensure muted
+                    video.play().then(() => {
+                        console.log(`✅ Video ${index + 1} playing`);
+                    }).catch(error => {
+                        console.log(`❌ Video ${index + 1} failed:`, error);
+                    });
+                });
+            }, 100);
         }
         
         function showErrorState() {
@@ -635,18 +386,8 @@
         // Initialize immediately
         initializePage();
 
-        // Additional initialization attempts
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('🔄 DOM loaded, initializing...');
-            initializePage();
-        });
-
-        window.addEventListener('load', () => {
-            console.log('🔄 Window loaded, checking audio...');
-            if (!ultraAudio.isPlaying) {
-                initializePage();
-            }
-        });
+        // Additional initialization
+        document.addEventListener('DOMContentLoaded', initializePage);
 
         // Prevent context menu
         document.addEventListener('contextmenu', e => e.preventDefault());
