@@ -13,6 +13,7 @@
             background-attachment: fixed;
             margin: 0;
             min-height: 100vh;
+            background-color: #000; /* Default black background */
         }
         .shine-text {
             color: white;
@@ -27,6 +28,7 @@
             min-height: 100vh;
             overflow-y: auto;
             padding-top: 50px;
+            padding-bottom: 50px; /* Bottom padding to prevent white space */
         }
         .video-grid {
             display: grid;
@@ -42,22 +44,22 @@
             align-items: center;
         }
         
-        /* Audio Control Button */
+        /* Audio Control Button - Smaller size */
         .audio-control {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.7);
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.8);
             color: white;
             border: 2px solid white;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            width: 40px; /* Reduced from 50px */
+            height: 40px; /* Reduced from 50px */
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: 18px;
+            font-size: 14px; /* Reduced from 18px */
             z-index: 1000;
             transition: all 0.3s ease;
             backdrop-filter: blur(10px);
@@ -69,14 +71,25 @@
         }
         
         .audio-control.muted {
-            background: rgba(255, 0, 0, 0.7);
+            background: rgba(255, 0, 0, 0.8);
             border-color: #ff4444;
+        }
+        
+        /* Hide scrollbar but keep functionality */
+        .content-container::-webkit-scrollbar {
+            width: 0;
+            background: transparent;
+        }
+        
+        /* Ensure no white background appears */
+        html {
+            background-color: #000;
         }
     </style>
 </head>
 <body>
-    <!-- Audio Control Button -->
-    <button id="audio-toggle" class="audio-control" title="Toggle Audio">
+    <!-- Audio Control Button - Only for Mute/Unmute -->
+    <button id="audio-toggle" class="audio-control" title="Mute/Unmute Audio">
         <i class="fas fa-volume-up" id="audio-icon"></i>
     </button>
     
@@ -93,103 +106,106 @@
     </div>
 
     <script>
-        // Audio management system
+        // Audio management system - Auto-play focused
         class AudioController {
             constructor() {
                 this.audio = document.getElementById('bg-audio');
                 this.toggleBtn = document.getElementById('audio-toggle');
                 this.icon = document.getElementById('audio-icon');
-                this.isPlaying = false;
                 this.isMuted = false;
                 this.audioUrl = '';
-                this.hasUserInteracted = false;
+                this.autoPlayAttempted = false;
                 
                 this.setupEventListeners();
             }
             
             setupEventListeners() {
-                // Toggle button click
+                // Toggle button only for mute/unmute
                 this.toggleBtn.addEventListener('click', () => {
-                    this.toggleAudio();
+                    this.toggleMute();
                 });
                 
                 // Audio events
                 this.audio.addEventListener('play', () => {
-                    this.isPlaying = true;
+                    console.log('Audio started playing');
                     this.updateIcon();
                 });
                 
                 this.audio.addEventListener('pause', () => {
-                    this.isPlaying = false;
-                    this.updateIcon();
+                    console.log('Audio paused');
                 });
                 
                 this.audio.addEventListener('volumechange', () => {
                     this.isMuted = this.audio.muted;
                     this.updateIcon();
                 });
+                
+                this.audio.addEventListener('error', (e) => {
+                    console.log('Audio error:', e);
+                });
             }
             
-            async forcePlayAudio(url) {
+            async startAutoPlay(url) {
                 this.audioUrl = url;
                 this.audio.src = url;
                 this.audio.volume = 0.7;
                 
-                console.log('Attempting to play audio...');
+                if (this.autoPlayAttempted) return;
+                this.autoPlayAttempted = true;
+                
+                console.log('Starting automatic audio playback...');
                 
                 // Method 1: Try direct play
                 try {
                     await this.audio.play();
-                    console.log('Audio playing directly!');
-                    this.isPlaying = true;
+                    console.log('✅ Audio auto-playing successfully!');
                     this.updateIcon();
                     return;
                 } catch (error) {
-                    console.log('Direct play failed, trying alternative methods...');
+                    console.log('❌ Direct autoplay blocked, trying muted approach...');
                 }
                 
-                // Method 2: Try muted first
+                // Method 2: Start muted, then unmute quickly
                 try {
                     this.audio.muted = true;
                     await this.audio.play();
-                    console.log('Audio started muted, will unmute soon...');
+                    console.log('🔇 Audio started muted, unmuting...');
                     
-                    // Gradually unmute
+                    // Unmute after short delay
                     setTimeout(() => {
                         this.audio.muted = false;
                         this.isMuted = false;
                         this.updateIcon();
-                        console.log('Audio unmuted!');
-                    }, 500);
+                        console.log('🔊 Audio unmuted successfully!');
+                    }, 300);
                     
-                    this.isPlaying = true;
                     return;
                 } catch (error) {
-                    console.log('Muted play failed, setting up interaction listeners...');
+                    console.log('❌ Muted autoplay also failed, waiting for user interaction...');
                 }
                 
-                // Method 3: Wait for user interaction
-                this.setupInteractionListeners();
+                // Method 3: Wait for any user interaction
+                this.setupInteractionPlay();
             }
             
-            setupInteractionListeners() {
-                const events = ['click', 'touchstart', 'touchend', 'keydown', 'scroll', 'mouseover'];
+            setupInteractionPlay() {
+                const events = ['click', 'touchstart', 'touchend', 'keydown', 'scroll', 'mousemove'];
+                let played = false;
                 
                 const playOnInteraction = () => {
-                    if (!this.hasUserInteracted) {
-                        this.hasUserInteracted = true;
-                        console.log('User interaction detected, playing audio...');
+                    if (!played) {
+                        played = true;
+                        console.log('👆 User interacted, starting audio...');
                         
                         this.audio.muted = false;
                         this.audio.play().then(() => {
-                            console.log('Audio playing after user interaction!');
-                            this.isPlaying = true;
+                            console.log('🎵 Audio playing after user interaction!');
                             this.updateIcon();
                         }).catch(e => {
-                            console.log('Still failed after interaction:', e);
+                            console.log('Still failed:', e);
                         });
                         
-                        // Remove listeners
+                        // Remove all listeners
                         events.forEach(event => {
                             document.removeEventListener(event, playOnInteraction);
                         });
@@ -199,40 +215,41 @@
                 events.forEach(event => {
                     document.addEventListener(event, playOnInteraction, { once: true, passive: true });
                 });
+                
+                console.log('⏳ Waiting for user interaction to start audio...');
             }
             
-            toggleAudio() {
-                if (!this.audio.src) return;
+            toggleMute() {
+                if (!this.audio.src) {
+                    console.log('No audio source available');
+                    return;
+                }
                 
-                if (this.isPlaying) {
-                    this.audio.pause();
-                    this.isPlaying = false;
-                } else {
+                // If audio is not playing, start it first
+                if (this.audio.paused) {
                     this.audio.play().then(() => {
-                        this.isPlaying = true;
-                        if (this.audio.muted) {
-                            this.audio.muted = false;
-                            this.isMuted = false;
-                        }
+                        console.log('Audio started from mute toggle');
                     }).catch(console.log);
                 }
                 
+                // Toggle mute state
+                this.audio.muted = !this.audio.muted;
+                this.isMuted = this.audio.muted;
+                
+                console.log(this.isMuted ? '🔇 Audio muted' : '🔊 Audio unmuted');
                 this.updateIcon();
             }
             
             updateIcon() {
-                // Remove all classes first
-                this.icon.className = '';
-                this.toggleBtn.classList.remove('muted');
-                
-                if (!this.isPlaying) {
-                    this.icon.className = 'fas fa-play';
-                    this.toggleBtn.classList.add('muted');
-                } else if (this.isMuted || this.audio.muted) {
+                // Only show mute/unmute icons
+                if (this.isMuted || this.audio.muted) {
                     this.icon.className = 'fas fa-volume-mute';
                     this.toggleBtn.classList.add('muted');
+                    this.toggleBtn.title = 'Unmute Audio';
                 } else {
                     this.icon.className = 'fas fa-volume-up';
+                    this.toggleBtn.classList.remove('muted');
+                    this.toggleBtn.title = 'Mute Audio';
                 }
             }
         }
@@ -282,12 +299,24 @@
                 // Load media items
                 loadMediaItems();
                 
-                // Start audio immediately
+                // Start audio automatically - multiple attempts
                 if (data.content.audio) {
-                    // Small delay to ensure DOM is ready
+                    // Immediate attempt
+                    audioController.startAutoPlay(data.content.audio);
+                    
+                    // Retry after DOM is fully ready
                     setTimeout(() => {
-                        audioController.forcePlayAudio(data.content.audio);
-                    }, 100);
+                        if (audioController.audio.paused) {
+                            audioController.startAutoPlay(data.content.audio);
+                        }
+                    }, 500);
+                    
+                    // Another retry after page load
+                    setTimeout(() => {
+                        if (audioController.audio.paused) {
+                            audioController.startAutoPlay(data.content.audio);
+                        }
+                    }, 1000);
                 }
                 
             } catch (error) {
@@ -324,36 +353,29 @@
             });
         }
 
-        // Initialize immediately
+        // Initialize when ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initializePage);
         } else {
             initializePage();
         }
         
-        // Additional audio triggers
+        // Additional autoplay attempts on window load
         window.addEventListener('load', () => {
-            if (data.content.audio && !audioController.isPlaying) {
-                setTimeout(() => {
-                    audioController.forcePlayAudio(data.content.audio);
-                }, 200);
-            }
+            setTimeout(() => {
+                if (data.content.audio && audioController.audio.paused) {
+                    console.log('🔄 Retrying audio autoplay after window load...');
+                    audioController.startAutoPlay(data.content.audio);
+                }
+            }, 300);
         });
         
-        // Page visibility change
+        // Try to resume audio when page becomes visible
         document.addEventListener('visibilitychange', () => {
-            if (!document.hidden && audioController.audio.src && !audioController.isPlaying) {
+            if (!document.hidden && audioController.audio.src && audioController.audio.paused) {
+                console.log('👁️ Page visible, trying to resume audio...');
                 audioController.audio.play().catch(console.log);
             }
-        });
-        
-        // Try to play on any user activity
-        ['mousedown', 'touchstart', 'keydown'].forEach(event => {
-            document.addEventListener(event, () => {
-                if (audioController.audio.src && audioController.audio.paused) {
-                    audioController.audio.play().catch(console.log);
-                }
-            }, { once: true, passive: true });
         });
 
         // Prevent context menu
