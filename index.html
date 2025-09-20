@@ -96,7 +96,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            transition: all 0.8s ease;
+            transition: all 0.6s ease;
         }
         
         .welcome-page.hidden {
@@ -153,7 +153,7 @@
             background-color: #000;
             opacity: 0;
             transform: scale(1.1);
-            transition: all 0.8s ease;
+            transition: all 0.6s ease;
             pointer-events: none;
         }
         
@@ -257,12 +257,11 @@
 
     <!-- Main Content Page -->
     <div class="main-page" id="main-page">
-        <!-- Hidden audio element - preloaded -->
+        <!-- Hidden audio element -->
         <audio id="bg-audio" preload="auto" loop style="display: none;"></audio>
         
-        <div class="content-container" id="main-container">
-            <div style="color: white; text-align: center; padding: 50px;">Loading content...</div>
-        </div>
+        <!-- Pre-rendered content container -->
+        <div class="content-container" id="main-container"></div>
     </div>
 
     <script>
@@ -270,28 +269,16 @@
         let jsonData = null;
         let allVideos = [];
         let audio = null;
-        let isContentPreloaded = false;
+        let contentReady = false;
         
-        // Preload audio immediately
-        function preloadAudio() {
+        // Instant audio setup
+        function setupAudio() {
             audio = document.getElementById('bg-audio');
-            
             if (jsonData && jsonData.content.audio) {
                 audio.src = jsonData.content.audio;
                 audio.volume = 0.7;
-                audio.load(); // Force preload
-                console.log('🎵 Audio preloaded');
-            }
-        }
-        
-        // Play audio instantly
-        function playAudio() {
-            if (audio && audio.src) {
-                audio.play().then(() => {
-                    console.log('✅ Audio playing instantly');
-                }).catch(error => {
-                    console.log('❌ Audio play failed:', error);
-                });
+                audio.load();
+                console.log('🎵 Audio ready');
             }
         }
         
@@ -303,9 +290,8 @@
                 video.playsInline = true;
                 video.autoplay = true;
                 
-                // Force immediate play
                 video.play().then(() => {
-                    console.log(`✅ Video ${index + 1} playing instantly`);
+                    console.log(`✅ Video ${index + 1} playing`);
                 }).catch(error => {
                     console.log(`❌ Video ${index + 1} failed:`, error);
                 });
@@ -320,7 +306,7 @@
             return videoExtensions.some(ext => urlLower.includes(ext)) ? 'video' : 'image';
         }
         
-        // Create media elements - preloaded
+        // Create media elements
         function createMediaElement(item) {
             const mediaType = detectMediaType(item.media);
             
@@ -348,86 +334,84 @@
             }
         }
         
-        // Preload main content
-        function preloadMainContent() {
-            if (isContentPreloaded || !jsonData) return;
-            
-            console.log('🚀 Preloading main content...');
-            isContentPreloaded = true;
+        // Pre-render content completely
+        function renderContent() {
+            if (contentReady || !jsonData) return;
             
             const container = document.getElementById('main-container');
             
-            // Set background immediately
+            // Set background
             if (jsonData.content.backgroundImage) {
                 document.getElementById('main-page').style.backgroundImage = `url('${jsonData.content.backgroundImage}')`;
             }
             
-            // Render content
-            container.innerHTML = `
+            // Build complete HTML
+            let htmlContent = `
                 <div class='text-center'>
                     <h1 class='text-4xl font-extrabold shine-text'>${jsonData.content.welcomeText || 'Welcome To'}</h1>
                     <h2 class='text-5xl font-extrabold shine-text'>${jsonData.content.mainTitle || 'MSM WORLD!'}</h2>
                     <p class='text-lg italic shine-text'>${jsonData.content.subtitle || 'BAD THOUGHT FOREVER (BTF)'}</p>
                 </div>
-                <div class='video-grid' id='video-grid'></div>
-            `;
+                <div class='video-grid'>`;
             
-            // Load media items immediately
-            const videoGrid = document.getElementById('video-grid');
-            
+            // Add media items
             if (jsonData.content.mediaItems && jsonData.content.mediaItems.length > 0) {
-                videoGrid.innerHTML = '';
-                allVideos = [];
-                
                 jsonData.content.mediaItems.forEach((item) => {
                     const mediaElement = createMediaElement(item);
-                    
-                    const itemDiv = document.createElement('div');
-                    itemDiv.className = 'video-item';
-                    itemDiv.innerHTML = `
-                        <a href='${item.link || '#'}' target="_blank" rel="noopener">
-                            ${mediaElement}
-                        </a>
-                        <p class='font-semibold text-2xl shine-text'>${item.name || 'Untitled'}</p>
+                    htmlContent += `
+                        <div class='video-item'>
+                            <a href='${item.link || '#'}' target="_blank" rel="noopener">
+                                ${mediaElement}
+                            </a>
+                            <p class='font-semibold text-2xl shine-text'>${item.name || 'Untitled'}</p>
+                        </div>
                     `;
-                    
-                    videoGrid.appendChild(itemDiv);
                 });
-                
-                // Collect all videos immediately
-                const videos = document.querySelectorAll('.video-element');
-                videos.forEach(video => {
-                    allVideos.push(video);
-                    video.load(); // Force immediate load
-                });
-                
-                console.log(`🎬 Preloaded ${allVideos.length} videos`);
             }
+            
+            htmlContent += '</div>';
+            
+            // Set all content at once
+            container.innerHTML = htmlContent;
+            
+            // Collect videos immediately
+            allVideos = [];
+            const videos = document.querySelectorAll('.video-element');
+            videos.forEach(video => {
+                allVideos.push(video);
+                video.load();
+            });
+            
+            contentReady = true;
+            console.log('✅ Content pre-rendered with', allVideos.length, 'videos');
         }
         
-        // Show main page instantly
+        // Instant page transition
         function showMainPage() {
             const welcomePage = document.getElementById('welcome-page');
             const mainPage = document.getElementById('main-page');
             
-            console.log('🚀 Instant transition to main page...');
+            console.log('🚀 Instant transition...');
             
             // Hide welcome page
             welcomePage.classList.add('hidden');
             
-            // Show main page immediately
+            // Show main page instantly
             setTimeout(() => {
                 mainPage.classList.add('active');
                 document.body.style.overflow = 'auto';
                 
-                // Play audio and videos instantly
-                playAudio();
-                setTimeout(() => playAllVideos(), 50);
+                // Play everything instantly
+                if (audio && audio.src) {
+                    audio.play().catch(console.log);
+                }
                 
-            }, 200);
+                playAllVideos();
+                
+            }, 100); // Minimal delay for smooth transition
         }
         
-        // Load JSON data
+        // Load and setup everything
         async function loadJsonData() {
             try {
                 const response = await fetch('data.json');
@@ -436,14 +420,14 @@
                 }
                 
                 jsonData = await response.json();
-                console.log('✅ JSON data loaded');
+                console.log('✅ JSON loaded');
                 
-                // Immediately preload audio and content
-                preloadAudio();
-                setTimeout(() => preloadMainContent(), 100);
+                // Immediately setup everything
+                setupAudio();
+                renderContent();
                 
             } catch (error) {
-                console.error('❌ JSON loading failed:', error);
+                console.error('❌ JSON failed:', error);
                 jsonData = {
                     content: {
                         welcomeText: "Welcome To",
@@ -452,31 +436,29 @@
                         mediaItems: []
                     }
                 };
+                renderContent();
             }
         }
         
-        // Initialize everything
+        // Initialize
         async function initialize() {
-            // Load JSON data first
             await loadJsonData();
             
             // Setup enter button
             const enterBtn = document.getElementById('enter-btn');
-            enterBtn.addEventListener('click', () => {
-                showMainPage();
-            });
+            enterBtn.addEventListener('click', showMainPage);
             
-            // Also allow Enter key
+            // Enter key support
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && !document.getElementById('main-page').classList.contains('active')) {
                     showMainPage();
                 }
             });
             
-            console.log('🎮 Everything preloaded - Click ENTER for instant access!');
+            console.log('🎮 Ready - Everything preloaded!');
         }
         
-        // Start initialization
+        // Start
         initialize();
         
         // Prevent context menu
