@@ -8,19 +8,135 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
             margin: 0;
             min-height: 100vh;
             background-color: #000;
+            overflow: hidden;
         }
+        
+        /* Welcome Page Styling */
+        .welcome-page {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.8s ease;
+        }
+        
+        .welcome-page.hidden {
+            opacity: 0;
+            transform: scale(0.8);
+            pointer-events: none;
+        }
+        
+        /* Animated background particles */
+        .welcome-page::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"><animate attributeName="cy" values="20;80;20" dur="3s" repeatCount="indefinite"/></circle><circle cx="50" cy="50" r="1" fill="rgba(255,255,255,0.2)"><animate attributeName="cy" values="50;10;50" dur="2s" repeatCount="indefinite"/></circle><circle cx="80" cy="30" r="3" fill="rgba(255,255,255,0.1)"><animate attributeName="cy" values="30;70;30" dur="4s" repeatCount="indefinite"/></circle></svg>');
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .welcome-title {
+            font-size: clamp(2rem, 8vw, 4rem);
+            font-weight: 900;
+            color: white;
+            text-align: center;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            margin-bottom: 2rem;
+            animation: glow 2s ease-in-out infinite alternate;
+            font-family: 'Arial Black', sans-serif;
+            letter-spacing: 2px;
+            z-index: 10;
+            position: relative;
+        }
+        
+        @keyframes glow {
+            from { text-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 30px rgba(255,255,255,0.2); }
+            to { text-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 30px rgba(255,255,255,0.4); }
+        }
+        
+        .welcome-subtitle {
+            font-size: clamp(1rem, 4vw, 1.5rem);
+            color: rgba(255,255,255,0.9);
+            text-align: center;
+            margin-bottom: 3rem;
+            font-style: italic;
+            z-index: 10;
+            position: relative;
+        }
+        
+        .enter-button {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            padding: 1rem 3rem;
+            font-size: 1.25rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            z-index: 10;
+            position: relative;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            min-width: 200px;
+        }
+        
+        .enter-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.4);
+            background: linear-gradient(45deg, #ee5a24, #ff6b6b);
+        }
+        
+        .enter-button:active {
+            transform: translateY(0px);
+        }
+        
+        /* Main Content Page */
+        .main-page {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-color: #000;
+            opacity: 0;
+            transform: scale(1.2);
+            transition: all 0.8s ease;
+            pointer-events: none;
+        }
+        
+        .main-page.active {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: all;
+        }
+        
         .shine-text {
             color: white;
             font-style: italic;
             font-family: 'Courier New', Courier, monospace;
             text-shadow: 0px 0px 10px rgba(0,0,0,0.7);
         }
+        
         .content-container {
             display: flex;
             flex-direction: column;
@@ -30,6 +146,7 @@
             padding-top: 50px;
             padding-bottom: 50px;
         }
+        
         .video-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -38,45 +155,13 @@
             max-width: 500px;
             margin-top: 20px;
         }
+        
         .video-item {
             display: flex;
             flex-direction: column;
             align-items: center;
         }
         
-        /* Audio Control Button */
-        .audio-control {
-            position: fixed;
-            top: 15px;
-            right: 15px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            border: 2px solid white;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 14px;
-            z-index: 1000;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-        
-        .audio-control:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: scale(1.1);
-        }
-        
-        .audio-control.paused {
-            background: rgba(0, 0, 0, 0.8);
-            border-color: #ffffff;
-            opacity: 0.6;
-        }
-        
-        /* Media styling - no background flicker */
         .media-element {
             width: 256px;
             height: 256px;
@@ -86,7 +171,6 @@
             display: block;
         }
         
-        /* Video - no background, smooth loading */
         .video-element {
             width: 256px;
             height: 256px;
@@ -94,19 +178,15 @@
             border-radius: 0.5rem;
             margin-bottom: 0.5rem;
             display: block;
-            background: transparent; /* No background flicker */
+            background: transparent;
         }
         
-        /* Hide all video controls completely */
+        /* Hide video controls */
         video::-webkit-media-controls {
             display: none !important;
         }
         
         video::-webkit-media-controls-panel {
-            display: none !important;
-        }
-        
-        video::-moz-media-controls {
             display: none !important;
         }
         
@@ -119,185 +199,93 @@
         html {
             background-color: #000;
         }
-        
-        .loading {
-            color: white;
-            text-align: center;
-            font-family: 'Courier New', Courier, monospace;
-            padding: 50px;
-        }
     </style>
 </head>
 <body>
-    <audio id="bg-audio" preload="auto" loop style="display: none;"></audio>
-    
-    <button id="audio-toggle" class="audio-control paused" title="Play/Pause Audio">
-        <i class="fas fa-play" id="audio-icon"></i>
-    </button>
-    
-    <div class="content-container" id="main-container">
-        <div class="loading">Loading...</div>
+    <!-- Welcome Page -->
+    <div class="welcome-page" id="welcome-page">
+        <h1 class="welcome-title">
+            I'm Ready To Explore<br>
+            <span style="background: linear-gradient(45deg, #ff6b6b, #feca57); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">MSM WORLD</span>
+        </h1>
+        <p class="welcome-subtitle">
+            Dive into an extraordinary multimedia experience
+        </p>
+        <button class="enter-button" id="enter-btn">
+            <i class="fas fa-rocket" style="margin-right: 10px;"></i>
+            ENTER
+        </button>
+    </div>
+
+    <!-- Main Content Page -->
+    <div class="main-page" id="main-page">
+        <!-- Hidden audio element -->
+        <audio id="bg-audio" preload="auto" loop style="display: none;"></audio>
+        
+        <div class="content-container" id="main-container">
+            <div style="color: white; text-align: center; padding: 50px;">Loading amazing content...</div>
+        </div>
     </div>
 
     <script>
-        // Audio Control System
-        class SimpleAudioControl {
-            constructor() {
-                this.audio = document.getElementById('bg-audio');
-                this.toggleBtn = document.getElementById('audio-toggle');
-                this.icon = document.getElementById('audio-icon');
-                this.isPlaying = false;
+        // Global variables
+        let jsonData = null;
+        let allVideos = [];
+        let audio = null;
+        
+        // Audio management
+        function initializeAudio() {
+            audio = document.getElementById('bg-audio');
+            
+            if (jsonData && jsonData.content.audio) {
+                audio.src = jsonData.content.audio;
+                audio.volume = 0.7;
                 
-                this.setupEventListeners();
-            }
-            
-            setupEventListeners() {
-                this.toggleBtn.addEventListener('click', () => {
-                    this.toggleAudio();
-                });
-                
-                this.audio.addEventListener('play', () => {
-                    this.isPlaying = true;
-                    this.updateIcon();
-                    console.log('🎵 Audio playing');
-                });
-                
-                this.audio.addEventListener('pause', () => {
-                    this.isPlaying = false;
-                    this.updateIcon();
-                    console.log('⏸️ Audio paused');
-                });
-            }
-            
-            setAudioUrl(url) {
-                this.audio.src = url;
-                this.audio.volume = 0.7;
-                console.log('🎵 Audio URL set');
-            }
-            
-            toggleAudio() {
-                if (this.isPlaying) {
-                    this.audio.pause();
-                } else {
-                    this.playAudio();
-                }
-            }
-            
-            playAudio() {
-                this.audio.play().then(() => {
-                    console.log('✅ Audio started playing');
+                // Play audio immediately after user interaction (Enter button)
+                audio.play().then(() => {
+                    console.log('🎵 Audio playing successfully');
                 }).catch(error => {
                     console.log('❌ Audio play failed:', error);
                 });
             }
-            
-            updateIcon() {
-                if (this.isPlaying) {
-                    this.icon.className = 'fas fa-pause';
-                    this.toggleBtn.classList.remove('paused');
-                } else {
-                    this.icon.className = 'fas fa-play';
-                    this.toggleBtn.classList.add('paused');
-                }
-            }
         }
         
-        const audioControl = new SimpleAudioControl();
-        
-        // Video and scroll management
-        let allVideos = [];
-        let scrollTriggered = false;
-        
-        // Enhanced scroll trigger system
-        function setupScrollTrigger() {
-            let scrollTimeout;
-            
-            // Function to trigger all media
-            const triggerAllMedia = () => {
-                if (scrollTriggered) return;
+        // Video management
+        function playAllVideos() {
+            allVideos.forEach((video, index) => {
+                video.muted = true;
+                video.autoplay = true;
+                video.loop = true;
+                video.playsInline = true;
                 
-                scrollTriggered = true;
-                console.log('📜 SCROLL TRIGGERED - Playing all media');
-                
-                // Play audio
-                audioControl.playAudio();
-                
-                // Play all videos
-                allVideos.forEach((video, index) => {
-                    setTimeout(() => {
-                        video.muted = true;
-                        video.play().then(() => {
-                            console.log(`✅ Video ${index + 1} playing from scroll`);
-                        }).catch(error => {
-                            console.log(`❌ Video ${index + 1} scroll play failed:`, error);
-                        });
-                    }, index * 50);
+                video.play().then(() => {
+                    console.log(`✅ Video ${index + 1} playing`);
+                }).catch(error => {
+                    console.log(`❌ Video ${index + 1} failed:`, error);
                 });
-            };
-            
-            // Multiple scroll event listeners
-            const scrollEvents = ['scroll', 'wheel', 'touchmove', 'touchstart'];
-            
-            scrollEvents.forEach(eventType => {
-                // Document scroll
-                document.addEventListener(eventType, (e) => {
-                    clearTimeout(scrollTimeout);
-                    scrollTimeout = setTimeout(triggerAllMedia, 10);
-                }, { passive: true });
-                
-                // Window scroll
-                window.addEventListener(eventType, (e) => {
-                    clearTimeout(scrollTimeout);
-                    scrollTimeout = setTimeout(triggerAllMedia, 10);
-                }, { passive: true });
             });
-            
-            // Container scroll
-            const container = document.getElementById('main-container');
-            if (container) {
-                scrollEvents.forEach(eventType => {
-                    container.addEventListener(eventType, (e) => {
-                        clearTimeout(scrollTimeout);
-                        scrollTimeout = setTimeout(triggerAllMedia, 10);
-                    }, { passive: true });
-                });
-            }
-            
-            // Additional triggers
-            ['click', 'touchend', 'keydown', 'mousemove'].forEach(eventType => {
-                document.addEventListener(eventType, triggerAllMedia, { once: true, passive: true });
-            });
-            
-            console.log('📜 Scroll triggers set up - any scroll will play media');
         }
         
         // Media detection
         function detectMediaType(url) {
             if (!url) return 'image';
-            
             const urlLower = url.toLowerCase();
             const videoExtensions = ['.mp4', '.webm', '.mov', '.avi', '.mkv', '.wmv', '.flv', '.m4v'];
-            
             return videoExtensions.some(ext => urlLower.includes(ext)) ? 'video' : 'image';
         }
         
-        // Create media element with instant loading
+        // Create media elements
         function createMediaElement(item) {
             const mediaType = detectMediaType(item.media);
             
             if (mediaType === 'video') {
-                // Pre-create video element for instant loading
                 return `
                     <video 
                         class="video-element" 
                         muted
                         loop
                         playsinline
-                        preload="auto"
-                        webkit-playsinline="true"
-                        autoplay
-                        data-src="${item.media}"
-                        style="background: transparent;">
+                        preload="auto">
                         <source src="${item.media}" type="video/mp4">
                         <source src="${item.media}" type="video/webm">
                     </video>
@@ -313,156 +301,134 @@
             }
         }
         
-        // Force play video with multiple attempts
-        function forcePlayVideo(video, index) {
-            // Set properties
-            video.muted = true;
-            video.autoplay = true;
-            video.loop = true;
-            video.playsInline = true;
-            video.controls = false;
+        // Load and render main content
+        function loadMainContent() {
+            const container = document.getElementById('main-container');
             
-            // Multiple play attempts
-            const attemptPlay = (attempt = 0) => {
-                if (attempt >= 5) return;
+            // Set background
+            if (jsonData.content.backgroundImage) {
+                document.getElementById('main-page').style.backgroundImage = `url('${jsonData.content.backgroundImage}')`;
+            }
+            
+            // Render content
+            container.innerHTML = `
+                <div class='text-center'>
+                    <h1 class='text-4xl font-extrabold shine-text'>${jsonData.content.welcomeText || 'Welcome To'}</h1>
+                    <h2 class='text-5xl font-extrabold shine-text'>${jsonData.content.mainTitle || 'MSM WORLD!'}</h2>
+                    <p class='text-lg italic shine-text'>${jsonData.content.subtitle || 'BAD THOUGHT FOREVER (BTF)'}</p>
+                </div>
+                <div class='video-grid' id='video-grid'></div>
+            `;
+            
+            // Load media items
+            const videoGrid = document.getElementById('video-grid');
+            
+            if (jsonData.content.mediaItems && jsonData.content.mediaItems.length > 0) {
+                videoGrid.innerHTML = '';
+                allVideos = [];
                 
-                video.play().then(() => {
-                    console.log(`✅ Video ${index + 1} playing (attempt ${attempt + 1})`);
-                }).catch(error => {
-                    console.log(`❌ Video ${index + 1} attempt ${attempt + 1} failed`);
-                    setTimeout(() => attemptPlay(attempt + 1), 100);
+                jsonData.content.mediaItems.forEach((item) => {
+                    const mediaElement = createMediaElement(item);
+                    
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'video-item';
+                    itemDiv.innerHTML = `
+                        <a href='${item.link || '#'}' target="_blank" rel="noopener">
+                            ${mediaElement}
+                        </a>
+                        <p class='font-semibold text-2xl shine-text'>${item.name || 'Untitled'}</p>
+                    `;
+                    
+                    videoGrid.appendChild(itemDiv);
                 });
-            };
-            
-            // Try immediately
-            attemptPlay();
-            
-            // Also try when video is ready
-            if (video.readyState >= 3) {
-                attemptPlay();
-            } else {
-                video.addEventListener('canplay', () => attemptPlay(), { once: true });
-                video.addEventListener('loadeddata', () => attemptPlay(), { once: true });
+                
+                // Collect all videos and prepare them
+                setTimeout(() => {
+                    const videos = document.querySelectorAll('.video-element');
+                    videos.forEach(video => {
+                        allVideos.push(video);
+                        video.load(); // Preload video
+                    });
+                    
+                    // Start playing videos after a short delay
+                    setTimeout(() => {
+                        playAllVideos();
+                    }, 500);
+                    
+                }, 100);
             }
         }
-
-        // Initialize page
-        async function initializePage() {
+        
+        // Page transition function
+        function showMainPage() {
+            const welcomePage = document.getElementById('welcome-page');
+            const mainPage = document.getElementById('main-page');
+            
+            console.log('🚀 Transitioning to main page...');
+            
+            // Hide welcome page
+            welcomePage.classList.add('hidden');
+            
+            // Show main page after short delay
+            setTimeout(() => {
+                mainPage.classList.add('active');
+                document.body.style.overflow = 'auto'; // Enable scrolling
+                
+                // Initialize audio and videos
+                initializeAudio();
+                loadMainContent();
+                
+            }, 400);
+        }
+        
+        // Load JSON data
+        async function loadJsonData() {
             try {
                 const response = await fetch('data.json');
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 
-                const data = await response.json();
-                
-                if (data.content.backgroundImage) {
-                    document.body.style.backgroundImage = `url('${data.content.backgroundImage}')`;
-                }
-                
-                if (data.content.audio) {
-                    audioControl.setAudioUrl(data.content.audio);
-                }
-                
-                renderContent(data);
-                loadMediaItems(data);
-                
-                // Setup scroll trigger immediately
-                setupScrollTrigger();
-                
-                // Try immediate play after short delay
-                setTimeout(() => {
-                    console.log('🎬 Attempting immediate video play...');
-                    allVideos.forEach((video, index) => {
-                        forcePlayVideo(video, index);
-                    });
-                }, 100);
+                jsonData = await response.json();
+                console.log('✅ JSON data loaded successfully');
                 
             } catch (error) {
                 console.error('❌ JSON loading failed:', error);
-                showErrorState();
+                jsonData = {
+                    content: {
+                        welcomeText: "Welcome To",
+                        mainTitle: "MSM WORLD!",
+                        subtitle: "BAD THOUGHT FOREVER (BTF)",
+                        mediaItems: []
+                    }
+                };
             }
         }
         
-        function renderContent(data) {
-            const container = document.getElementById('main-container');
-            container.innerHTML = `
-                <div class='text-center'>
-                    <h1 class='text-4xl font-extrabold shine-text'>${data.content.welcomeText || 'Welcome To'}</h1>
-                    <h2 class='text-5xl font-extrabold shine-text'>${data.content.mainTitle || 'MSM WORLD!'}</h2>
-                    <p class='text-lg italic shine-text'>${data.content.subtitle || 'BAD THOUGHT FOREVER (BTF)'}</p>
-                </div>
-                <div class='video-grid' id='video-grid'></div>
-            `;
-        }
-
-        function loadMediaItems(data) {
-            const videoGrid = document.getElementById('video-grid');
+        // Initialize everything
+        async function initialize() {
+            // Load JSON data first
+            await loadJsonData();
             
-            if (!data.content.mediaItems || data.content.mediaItems.length === 0) {
-                videoGrid.innerHTML = '<p class="shine-text col-span-2 text-center">No media items found</p>';
-                return;
-            }
-            
-            videoGrid.innerHTML = '';
-            allVideos = [];
-            
-            data.content.mediaItems.forEach((item, index) => {
-                const mediaElement = createMediaElement(item);
-                
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'video-item';
-                itemDiv.innerHTML = `
-                    <a href='${item.link || '#'}' target="_blank" rel="noopener">
-                        ${mediaElement}
-                    </a>
-                    <p class='font-semibold text-2xl shine-text'>${item.name || 'Untitled'}</p>
-                `;
-                
-                videoGrid.appendChild(itemDiv);
+            // Setup enter button
+            const enterBtn = document.getElementById('enter-btn');
+            enterBtn.addEventListener('click', () => {
+                showMainPage();
             });
             
-            // Collect videos and setup immediate
-            setTimeout(() => {
-                const videos = document.querySelectorAll('.video-element');
-                console.log(`🎬 Found ${videos.length} videos`);
-                
-                videos.forEach((video, index) => {
-                    allVideos.push(video);
-                    
-                    // Remove any flicker
-                    video.style.background = 'transparent';
-                    
-                    // Force immediate loading
-                    video.load();
-                    
-                    // Setup play when ready
-                    video.addEventListener('loadedmetadata', () => {
-                        forcePlayVideo(video, index);
-                    });
-                    
-                    // Immediate attempt
-                    forcePlayVideo(video, index);
-                });
-            }, 10);
+            // Also allow Enter key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !document.getElementById('main-page').classList.contains('active')) {
+                    showMainPage();
+                }
+            });
+            
+            console.log('🎮 Welcome page ready - Click ENTER to explore!');
         }
         
-        function showErrorState() {
-            const container = document.getElementById('main-container');
-            container.innerHTML = `
-                <div class="text-center">
-                    <h1 class="text-3xl font-bold shine-text mb-4">❌ Error</h1>
-                    <p class="shine-text mb-4">Could not load data.json</p>
-                    <button onclick="location.reload()" class="bg-white text-black px-4 py-2 rounded font-semibold">
-                        🔄 Refresh
-                    </button>
-                </div>
-            `;
-        }
-
-        // Initialize
-        initializePage();
-
+        // Start initialization
+        initialize();
+        
         // Prevent context menu
         document.addEventListener('contextmenu', e => e.preventDefault());
     </script>
