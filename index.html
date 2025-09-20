@@ -76,7 +76,7 @@
             opacity: 0.6;
         }
         
-        /* Media styling */
+        /* Media styling - no background flicker */
         .media-element {
             width: 256px;
             height: 256px;
@@ -86,7 +86,7 @@
             display: block;
         }
         
-        /* Video specific - force autoplay */
+        /* Video - no background, smooth loading */
         .video-element {
             width: 256px;
             height: 256px;
@@ -94,10 +94,10 @@
             border-radius: 0.5rem;
             margin-bottom: 0.5rem;
             display: block;
-            background: #000;
+            background: transparent; /* No background flicker */
         }
         
-        /* Hide all video controls */
+        /* Hide all video controls completely */
         video::-webkit-media-controls {
             display: none !important;
         }
@@ -107,10 +107,6 @@
         }
         
         video::-moz-media-controls {
-            display: none !important;
-        }
-        
-        video::--webkit-media-controls-play-button {
             display: none !important;
         }
         
@@ -151,7 +147,6 @@
                 this.toggleBtn = document.getElementById('audio-toggle');
                 this.icon = document.getElementById('audio-icon');
                 this.isPlaying = false;
-                this.hasScrollTriggered = false;
                 
                 this.setupEventListeners();
             }
@@ -164,32 +159,36 @@
                 this.audio.addEventListener('play', () => {
                     this.isPlaying = true;
                     this.updateIcon();
+                    console.log('🎵 Audio playing');
                 });
                 
                 this.audio.addEventListener('pause', () => {
                     this.isPlaying = false;
                     this.updateIcon();
+                    console.log('⏸️ Audio paused');
                 });
             }
             
             setAudioUrl(url) {
                 this.audio.src = url;
                 this.audio.volume = 0.7;
+                console.log('🎵 Audio URL set');
             }
             
             toggleAudio() {
                 if (this.isPlaying) {
                     this.audio.pause();
                 } else {
-                    this.audio.play().catch(console.log);
+                    this.playAudio();
                 }
             }
             
-            triggerPlay() {
-                if (!this.hasScrollTriggered) {
-                    this.hasScrollTriggered = true;
-                    this.audio.play().catch(console.log);
-                }
+            playAudio() {
+                this.audio.play().then(() => {
+                    console.log('✅ Audio started playing');
+                }).catch(error => {
+                    console.log('❌ Audio play failed:', error);
+                });
             }
             
             updateIcon() {
@@ -205,88 +204,102 @@
         
         const audioControl = new SimpleAudioControl();
         
-        // Video management
+        // Video and scroll management
         let allVideos = [];
         let scrollTriggered = false;
         
-        // Enhanced media detection
+        // Enhanced scroll trigger system
+        function setupScrollTrigger() {
+            let scrollTimeout;
+            
+            // Function to trigger all media
+            const triggerAllMedia = () => {
+                if (scrollTriggered) return;
+                
+                scrollTriggered = true;
+                console.log('📜 SCROLL TRIGGERED - Playing all media');
+                
+                // Play audio
+                audioControl.playAudio();
+                
+                // Play all videos
+                allVideos.forEach((video, index) => {
+                    setTimeout(() => {
+                        video.muted = true;
+                        video.play().then(() => {
+                            console.log(`✅ Video ${index + 1} playing from scroll`);
+                        }).catch(error => {
+                            console.log(`❌ Video ${index + 1} scroll play failed:`, error);
+                        });
+                    }, index * 50);
+                });
+            };
+            
+            // Multiple scroll event listeners
+            const scrollEvents = ['scroll', 'wheel', 'touchmove', 'touchstart'];
+            
+            scrollEvents.forEach(eventType => {
+                // Document scroll
+                document.addEventListener(eventType, (e) => {
+                    clearTimeout(scrollTimeout);
+                    scrollTimeout = setTimeout(triggerAllMedia, 10);
+                }, { passive: true });
+                
+                // Window scroll
+                window.addEventListener(eventType, (e) => {
+                    clearTimeout(scrollTimeout);
+                    scrollTimeout = setTimeout(triggerAllMedia, 10);
+                }, { passive: true });
+            });
+            
+            // Container scroll
+            const container = document.getElementById('main-container');
+            if (container) {
+                scrollEvents.forEach(eventType => {
+                    container.addEventListener(eventType, (e) => {
+                        clearTimeout(scrollTimeout);
+                        scrollTimeout = setTimeout(triggerAllMedia, 10);
+                    }, { passive: true });
+                });
+            }
+            
+            // Additional triggers
+            ['click', 'touchend', 'keydown', 'mousemove'].forEach(eventType => {
+                document.addEventListener(eventType, triggerAllMedia, { once: true, passive: true });
+            });
+            
+            console.log('📜 Scroll triggers set up - any scroll will play media');
+        }
+        
+        // Media detection
         function detectMediaType(url) {
             if (!url) return 'image';
             
             const urlLower = url.toLowerCase();
+            const videoExtensions = ['.mp4', '.webm', '.mov', '.avi', '.mkv', '.wmv', '.flv', '.m4v'];
             
-            // More comprehensive video detection
-            const videoPatterns = [
-                '.mp4', '.webm', '.mov', '.avi', '.mkv', '.wmv', '.flv', '.m4v',
-                '.ogv', '.3gp', '.mpg', '.mpeg', '.m2v', '.m4p', '.mp2', '.mpe', '.mpv'
-            ];
-            
-            for (const pattern of videoPatterns) {
-                if (urlLower.includes(pattern)) {
-                    return 'video';
-                }
-            }
-            
-            // Check for video hosting services
-            if (urlLower.includes('youtube.com') || urlLower.includes('vimeo.com') || 
-                urlLower.includes('video') || urlLower.includes('stream')) {
-                return 'video';
-            }
-            
-            return 'image';
+            return videoExtensions.some(ext => urlLower.includes(ext)) ? 'video' : 'image';
         }
         
-        // Force video play function
-        function forcePlayVideo(video, attempts = 0) {
-            if (attempts > 10) {
-                console.log('❌ Video play failed after 10 attempts');
-                return;
-            }
-            
-            video.play().then(() => {
-                console.log(`✅ Video playing (attempt ${attempts + 1})`);
-            }).catch(error => {
-                console.log(`❌ Video play attempt ${attempts + 1} failed:`, error.message);
-                
-                // Retry with different settings
-                setTimeout(() => {
-                    if (attempts === 2) {
-                        video.muted = true;
-                        video.volume = 0;
-                    }
-                    if (attempts === 4) {
-                        video.load(); // Reload video
-                    }
-                    forcePlayVideo(video, attempts + 1);
-                }, 200);
-            });
-        }
-        
-        // Create media element with proper video configuration
+        // Create media element with instant loading
         function createMediaElement(item) {
             const mediaType = detectMediaType(item.media);
-            console.log(`📺 Media type: ${mediaType} for ${item.name}`);
             
             if (mediaType === 'video') {
-                // Create video with all necessary attributes for autoplay
+                // Pre-create video element for instant loading
                 return `
                     <video 
                         class="video-element" 
-                        autoplay
                         muted
                         loop
                         playsinline
                         preload="auto"
                         webkit-playsinline="true"
-                        x-webkit-airplay="deny"
-                        disablepictureinpicture
-                        data-video-src="${item.media}"
-                        onloadedmetadata="this.play().catch(console.log)"
-                        oncanplay="this.play().catch(console.log)"
-                        style="background: #000;">
+                        autoplay
+                        data-src="${item.media}"
+                        style="background: transparent;">
                         <source src="${item.media}" type="video/mp4">
                         <source src="${item.media}" type="video/webm">
-                        Your browser does not support video playback.
                     </video>
                 `;
             } else {
@@ -295,45 +308,41 @@
                         src="${item.media}" 
                         alt="${item.name || 'Media'}" 
                         class="media-element" 
-                        loading="lazy">
+                        loading="eager">
                 `;
             }
         }
         
-        // Setup scroll triggers
-        function setupScrollTrigger() {
-            const triggerEvents = ['scroll', 'wheel', 'touchmove'];
+        // Force play video with multiple attempts
+        function forcePlayVideo(video, index) {
+            // Set properties
+            video.muted = true;
+            video.autoplay = true;
+            video.loop = true;
+            video.playsInline = true;
+            video.controls = false;
             
-            triggerEvents.forEach(eventType => {
-                document.addEventListener(eventType, () => {
-                    if (!scrollTriggered) {
-                        scrollTriggered = true;
-                        console.log('📜 Scroll trigger activated');
-                        
-                        // Trigger audio
-                        audioControl.triggerPlay();
-                        
-                        // Force play all videos
-                        allVideos.forEach((video, index) => {
-                            setTimeout(() => {
-                                console.log(`🎬 Force playing video ${index + 1}`);
-                                forcePlayVideo(video);
-                            }, index * 100);
-                        });
-                    }
-                }, { once: true, passive: true });
-            });
+            // Multiple play attempts
+            const attemptPlay = (attempt = 0) => {
+                if (attempt >= 5) return;
+                
+                video.play().then(() => {
+                    console.log(`✅ Video ${index + 1} playing (attempt ${attempt + 1})`);
+                }).catch(error => {
+                    console.log(`❌ Video ${index + 1} attempt ${attempt + 1} failed`);
+                    setTimeout(() => attemptPlay(attempt + 1), 100);
+                });
+            };
             
-            // Also try container scroll
-            const container = document.getElementById('main-container');
-            if (container) {
-                container.addEventListener('scroll', () => {
-                    if (!scrollTriggered) {
-                        scrollTriggered = true;
-                        audioControl.triggerPlay();
-                        allVideos.forEach(video => forcePlayVideo(video));
-                    }
-                }, { once: true, passive: true });
+            // Try immediately
+            attemptPlay();
+            
+            // Also try when video is ready
+            if (video.readyState >= 3) {
+                attemptPlay();
+            } else {
+                video.addEventListener('canplay', () => attemptPlay(), { once: true });
+                video.addEventListener('loadeddata', () => attemptPlay(), { once: true });
             }
         }
 
@@ -358,18 +367,16 @@
                 renderContent(data);
                 loadMediaItems(data);
                 
-                // Setup scroll trigger after content loads
+                // Setup scroll trigger immediately
+                setupScrollTrigger();
+                
+                // Try immediate play after short delay
                 setTimeout(() => {
-                    setupScrollTrigger();
-                    
-                    // Try immediate video play after 1 second
-                    setTimeout(() => {
-                        console.log('🎬 Attempting immediate video play...');
-                        allVideos.forEach((video, index) => {
-                            setTimeout(() => forcePlayVideo(video), index * 200);
-                        });
-                    }, 1000);
-                }, 500);
+                    console.log('🎬 Attempting immediate video play...');
+                    allVideos.forEach((video, index) => {
+                        forcePlayVideo(video, index);
+                    });
+                }, 100);
                 
             } catch (error) {
                 console.error('❌ JSON loading failed:', error);
@@ -401,9 +408,6 @@
             allVideos = [];
             
             data.content.mediaItems.forEach((item, index) => {
-                console.log(`🔄 Processing item ${index + 1}: ${item.name}`);
-                console.log(`🔗 Media URL: ${item.media}`);
-                
                 const mediaElement = createMediaElement(item);
                 
                 const itemDiv = document.createElement('div');
@@ -418,41 +422,29 @@
                 videoGrid.appendChild(itemDiv);
             });
             
-            // Collect and configure all video elements
+            // Collect videos and setup immediate
             setTimeout(() => {
                 const videos = document.querySelectorAll('.video-element');
-                console.log(`🎬 Found ${videos.length} video elements`);
+                console.log(`🎬 Found ${videos.length} videos`);
                 
                 videos.forEach((video, index) => {
                     allVideos.push(video);
                     
-                    // Remove any controls
-                    video.removeAttribute('controls');
-                    video.controls = false;
+                    // Remove any flicker
+                    video.style.background = 'transparent';
                     
-                    // Force properties
-                    video.muted = true;
-                    video.autoplay = true;
-                    video.loop = true;
-                    video.playsInline = true;
+                    // Force immediate loading
+                    video.load();
                     
-                    // Event listeners for debugging
-                    video.addEventListener('loadstart', () => console.log(`📥 Video ${index + 1} loading...`));
-                    video.addEventListener('loadeddata', () => console.log(`📊 Video ${index + 1} data loaded`));
-                    video.addEventListener('canplay', () => {
-                        console.log(`✅ Video ${index + 1} can play`);
-                        forcePlayVideo(video);
+                    // Setup play when ready
+                    video.addEventListener('loadedmetadata', () => {
+                        forcePlayVideo(video, index);
                     });
-                    video.addEventListener('play', () => console.log(`▶️ Video ${index + 1} started playing`));
-                    video.addEventListener('error', (e) => console.log(`❌ Video ${index + 1} error:`, e));
                     
-                    // Immediate play attempt
-                    setTimeout(() => {
-                        console.log(`🎬 Immediate play attempt for video ${index + 1}`);
-                        forcePlayVideo(video);
-                    }, (index + 1) * 300);
+                    // Immediate attempt
+                    forcePlayVideo(video, index);
                 });
-            }, 200);
+            }, 10);
         }
         
         function showErrorState() {
