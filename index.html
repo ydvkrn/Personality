@@ -13,26 +13,11 @@
             margin: 0;
             overflow: hidden;
         }
-        .center-container {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            text-align: center;
-        }
         .shine-text {
             color: white;
             font-style: italic;
             font-family: 'Courier New', Courier, monospace;
             text-shadow: 0px 0px 10px rgba(0,0,0,0.7);
-        }
-        .timer {
-            font-size: 4rem;
-            font-weight: bold;
-            color: white;
-            text-shadow: 0px 0px 10px rgba(0,0,0,0.7);
-            margin-top: 20px;
         }
         .content-container {
             display: flex;
@@ -40,371 +25,104 @@
             align-items: center;
             height: 100vh;
             overflow-y: auto;
-            padding-top: 30px;
-            padding-bottom: 30px;
+            padding-top: 50px;
         }
-        
-        /* 2x2 Adaptive Grid Layout */
         .video-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            grid-template-rows: repeat(2, 1fr);
-            gap: 15px;
-            width: min(95vw, 800px);
-            height: min(85vh, 600px);
+            gap: 20px;
+            width: 100%;
+            max-width: 500px;
             margin-top: 20px;
         }
-        
         .video-item {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            aspect-ratio: 1;
-            position: relative;
-            overflow: hidden;
-            border-radius: 15px;
-            background: rgba(0,0,0,0.3);
-            backdrop-filter: blur(5px);
-        }
-        
-        /* Adaptive Media Elements */
-        .media-element {
-            width: 100%;
-            height: 80%;
-            object-fit: cover;
-            border-radius: 10px;
-            transition: transform 0.3s ease;
-        }
-        
-        .media-element:hover {
-            transform: scale(1.02);
-        }
-        
-        /* Video specific styling */
-        .media-element video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 10px;
-        }
-        
-        /* Image specific styling */  
-        .media-element img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 10px;
-        }
-        
-        .video-item a {
-            width: 100%;
-            height: 80%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .video-item p {
-            font-weight: 600;
-            font-size: clamp(1rem, 2.5vw, 1.5rem);
-            margin-top: 8px;
-            text-align: center;
-            height: 20%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 10px;
-            line-height: 1.2;
-        }
-        
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .video-grid {
-                width: 95vw;
-                height: 70vh;
-                gap: 10px;
-            }
-            
-            .content-container {
-                padding-top: 20px;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .video-grid {
-                grid-template-columns: 1fr 1fr;
-                grid-template-rows: 1fr 1fr;
-                width: 90vw;
-                height: 65vh;
-                gap: 8px;
-            }
-        }
-        
-        /* Hide scrollbar */
-        .content-container::-webkit-scrollbar {
-            display: none;
-        }
-        .content-container {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        
-        /* Loading animation */
-        .loading {
-            opacity: 0.7;
-            animation: pulse 1.5s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 0.7; }
-            50% { opacity: 1; }
         }
     </style>
 </head>
 <body>
-    <div class="center-container" id="start-screen">
-        <img id="warning-img" src="" alt="Warning animation" class="rounded-lg shadow-lg">
-        <div id="timer" class="timer">3</div>
+    <div class="content-container">
+        <div class='text-center'>
+            <h1 class='text-4xl font-extrabold shine-text' id="welcome-text"></h1>
+            <h2 class='text-5xl font-extrabold shine-text' id="main-title"></h2>
+            <p class='text-lg italic shine-text' id="subtitle"></p>
+        </div>
+        <div class='video-grid' id='video-grid'></div>
     </div>
 
-    <div id="main-content" class="hidden content-container"></div>
-    
-    <!-- Hidden audio for autoplay trick -->
-    <audio id="background-audio" preload="auto" loop muted style="display: none;"></audio>
-
     <script>
-        // Force Audio Autoplay Function
-        class AudioManager {
-            constructor() {
-                this.audio = document.getElementById('background-audio');
-                this.isPlaying = false;
-                this.hasUserInteracted = false;
-                this.audioUrl = '';
-            }
-
-            async forcePlay(url) {
-                this.audioUrl = url;
-                this.audio.src = url;
-                
-                try {
-                    // Try to play muted first (this usually works)
-                    this.audio.muted = true;
-                    await this.audio.play();
-                    
-                    // After a short delay, try to unmute
-                    setTimeout(() => {
-                        this.attemptUnmute();
-                    }, 500);
-                    
-                    this.isPlaying = true;
-                    console.log('Audio started (muted)');
-                } catch (error) {
-                    console.log('Direct autoplay failed, setting up interaction listeners');
-                    this.setupInteractionListeners();
-                }
-            }
-
-            attemptUnmute() {
-                // Try different methods to unmute
-                try {
-                    this.audio.muted = false;
-                    console.log('Audio unmuted successfully');
-                } catch (error) {
-                    console.log('Unmute failed, using Web Audio API trick');
-                    this.useWebAudioTrick();
-                }
-            }
-
-            useWebAudioTrick() {
-                try {
-                    // Create AudioContext and connect to unlock audio
-                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    const source = audioContext.createMediaElementSource(this.audio);
-                    source.connect(audioContext.destination);
-                    
-                    if (audioContext.state === 'suspended') {
-                        audioContext.resume().then(() => {
-                            this.audio.muted = false;
-                            console.log('Audio unlocked via Web Audio API');
-                        });
-                    }
-                } catch (error) {
-                    console.log('Web Audio API trick failed:', error);
-                    this.setupInteractionListeners();
-                }
-            }
-
-            setupInteractionListeners() {
-                const events = ['click', 'touchend', 'keydown', 'scroll'];
-                const playAudio = () => {
-                    if (!this.hasUserInteracted) {
-                        this.hasUserInteracted = true;
-                        this.audio.muted = false;
-                        this.audio.play().catch(e => console.log('Still failed:', e));
-                        
-                        // Remove listeners after first interaction
-                        events.forEach(event => {
-                            document.removeEventListener(event, playAudio);
-                        });
-                        console.log('Audio playing after user interaction');
-                    }
-                };
-
-                // Add multiple interaction listeners
-                events.forEach(event => {
-                    document.addEventListener(event, playAudio, { once: true });
-                });
-            }
-        }
-
-        const audioManager = new AudioManager();
-
         fetch('data.json')
             .then(response => response.json())
             .then(data => {
+                // Set background
                 document.body.style.backgroundImage = `url('${data.content.backgroundImage}')`;
-                document.getElementById("warning-img").src = data.content.warningImage;
+                
+                // Set text content
+                document.getElementById("welcome-text").textContent = data.content.welcomeText;
+                document.getElementById("main-title").textContent = data.content.mainTitle;
+                document.getElementById("subtitle").textContent = data.content.subtitle;
 
-                let countdown = 3;
-                const timerElement = document.getElementById("timer");
-                const startScreen = document.getElementById("start-screen");
-                const mainContent = document.getElementById("main-content");
+                const videoGrid = document.getElementById('video-grid');
 
-                const timerInterval = setInterval(() => {
-                    countdown--;
-                    timerElement.textContent = countdown;
-                    if (countdown <= 0) {
-                        clearInterval(timerInterval);
-                        
-                        // Auto transition to main content (no button needed)
-                        setTimeout(() => {
-                            startScreen.style.display = "none";
-                            mainContent.classList.remove("hidden");
-                            loadMainContent(data);
-                        }, 500);
+                data.content.mediaItems.forEach(item => {
+                    let mediaElement;
+
+                    // "Reel Of The Day" ke liye special handling
+                    if (item.name === "Reel Of The Day" && item.reels && item.reels.length > 0) {
+                        mediaElement = `
+                            <video class='w-64 h-64 object-cover rounded-lg mb-2' muted loop>
+                                <source src='${item.reels[0].media}' type='video/mp4'>
+                                Your browser does not support the video tag.
+                            </video>
+                        `;
+                    } else {
+                        // Check if media is video
+                        const isVideo = item.media.toLowerCase().endsWith(".mp4") || 
+                                        item.media.toLowerCase().endsWith(".webm") || 
+                                        item.media.toLowerCase().endsWith(".mov");
+
+                        mediaElement = isVideo ?
+                            `<video class='w-64 h-64 object-cover rounded-lg mb-2' autoplay muted loop>
+                                <source src='${item.media}' type='video/mp4'>
+                                Your browser does not support the video tag.
+                            </video>` :
+                            `<img src='${item.media}' alt='${item.name} preview' class='w-64 h-64 object-cover rounded-lg mb-2'>`;
                     }
-                }, 1000);
 
-                // Start audio immediately when data loads
-                if (data.content.audio) {
-                    audioManager.forcePlay(data.content.audio);
-                }
-
-                function loadMainContent(data) {
-                    mainContent.innerHTML = `
-                        <div class='text-center'>
-                            <h1 class='text-4xl font-extrabold shine-text'>${data.content.welcomeText}</h1>
-                            <h2 class='text-5xl font-extrabold shine-text'>${data.content.mainTitle}</h2>
-                            <p class='text-lg italic shine-text'>${data.content.subtitle}</p>
-                        </div>
-                        <div class='video-grid' id='video-grid'></div>
-                    `;
-
-                    const videoGrid = document.getElementById('video-grid');
-
-                    data.content.mediaItems.forEach((item, index) => {
-                        let mediaElement;
-
-                        // Special handling for "Reel Of The Day"
-                        if (item.name === "Reel Of The Day" && item.reels && item.reels.length > 0) {
-                            mediaElement = `
-                                <video class='media-element' autoplay muted loop playsinline>
-                                    <source src='${item.reels[0].media}' type='video/mp4'>
-                                    Your browser does not support the video tag.
-                                </video>
-                            `;
-                        } else {
-                            // Check if media is video or image
-                            const isVideo = item.media && (
-                                item.media.toLowerCase().endsWith(".mp4") || 
-                                item.media.toLowerCase().endsWith(".webm") || 
-                                item.media.toLowerCase().endsWith(".mov") ||
-                                item.media.toLowerCase().endsWith(".avi")
-                            );
-
-                            mediaElement = isVideo ?
-                                `<video class='media-element' autoplay muted loop playsinline>
-                                    <source src='${item.media}' type='video/mp4'>
-                                    Your browser does not support the video tag.
-                                </video>` :
-                                `<img src='${item.media}' alt='${item.name} preview' class='media-element' loading="lazy">`;
-                        }
-
-                        const videoItem = document.createElement('div');
-                        videoItem.className = 'video-item';
-                        videoItem.innerHTML = `
-                            <a href='${item.link || '#'}' target="_blank" rel="noopener">
+                    videoGrid.innerHTML += `
+                        <div class='video-item'>
+                            <a href='${item.link}'>
                                 ${mediaElement}
                             </a>
-                            <p class='font-semibold shine-text'>${item.name}</p>
-                        `;
+                            <p class='font-semibold text-2xl shine-text'>${item.name}</p>
+                        </div>
+                    `;
+                });
 
-                        videoGrid.appendChild(videoItem);
-                    });
-
-                    // Add loading animation to videos
-                    const videos = videoGrid.querySelectorAll('video');
-                    videos.forEach(video => {
-                        video.addEventListener('loadstart', () => {
-                            video.classList.add('loading');
-                        });
-                        
-                        video.addEventListener('loadeddata', () => {
-                            video.classList.remove('loading');
-                        });
-                        
-                        // Error handling for videos
-                        video.addEventListener('error', () => {
-                            video.classList.remove('loading');
-                            video.style.background = 'rgba(255,255,255,0.1)';
-                            video.innerHTML = '<p class="shine-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">Video not available</p>';
-                        });
-                    });
-
-                    // Add error handling for images
-                    const images = videoGrid.querySelectorAll('img');
-                    images.forEach(img => {
-                        img.addEventListener('error', () => {
-                            img.style.background = 'rgba(255,255,255,0.1)';
-                            img.alt = 'Image not available';
-                        });
+                // Audio force play
+                if (data.content.audio) {
+                    const audio = new Audio(data.content.audio);
+                    audio.loop = true;
+                    
+                    // Try to play immediately
+                    audio.play().catch(() => {
+                        // If autoplay fails, try on first user interaction
+                        const playOnInteraction = () => {
+                            audio.play().catch(console.log);
+                            document.removeEventListener('click', playOnInteraction);
+                            document.removeEventListener('touchstart', playOnInteraction);
+                        };
+                        document.addEventListener('click', playOnInteraction);
+                        document.addEventListener('touchstart', playOnInteraction);
                     });
                 }
             })
             .catch(err => {
                 console.error("Failed to load JSON:", err);
-                document.getElementById("main-content").innerHTML = `
-                    <div class="text-center">
-                        <p class='shine-text text-2xl'>Error loading content</p>
-                        <p class='shine-text'>Please check console for details.</p>
-                    </div>
-                `;
-                document.getElementById("main-content").classList.remove("hidden");
-                document.getElementById("start-screen").style.display = "none";
+                document.body.innerHTML = `<div class="content-container"><p class='shine-text'>Error loading content.</p></div>`;
             });
-
-        // Additional force play attempts on any user interaction
-        document.addEventListener('DOMContentLoaded', () => {
-            // Try multiple approaches to get audio working
-            const unlockAudio = () => {
-                if (audioManager.audio && audioManager.audioUrl && !audioManager.hasUserInteracted) {
-                    audioManager.audio.muted = false;
-                    audioManager.audio.play().catch(e => {
-                        console.log('Final unlock attempt failed:', e);
-                    });
-                    audioManager.hasUserInteracted = true;
-                }
-            };
-
-            // Multiple event listeners for maximum compatibility
-            ['touchstart', 'touchend', 'mousedown', 'keydown'].forEach(event => {
-                document.addEventListener(event, unlockAudio, { once: true });
-            });
-        });
-
-        // Prevent right-click context menu for better UX
-        document.addEventListener('contextmenu', e => e.preventDefault());
     </script>
 </body>
 </html>
