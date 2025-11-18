@@ -60,6 +60,11 @@
             height: 100%;
         }
 
+        #enterBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         #videoContainer {
             display: none;
             width: 100vw;
@@ -115,18 +120,20 @@
                 opacity: 0;
             }
         }
+
+        .loading {
+            color: #fff;
+            font-size: 1.2rem;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
-    <button id="enterBtn">Enter</button>
+    <button id="enterBtn" disabled>Loading...</button>
 
     <div id="videoContainer">
         <video id="videoPlayer" playsinline webkit-playsinline>
-            <source fetch('https://your-worker.workers.dev/msm.json')
-  .then(res => res.json())
-  .then(data => {
-    videoPlayer.src = data.videoUrl;
-  });
+            <source id="videoSource" type="video/mp4">
         </video>
     </div>
 
@@ -134,8 +141,44 @@
         const enterBtn = document.getElementById('enterBtn');
         const videoContainer = document.getElementById('videoContainer');
         const videoPlayer = document.getElementById('videoPlayer');
-
+        const videoSource = document.getElementById('videoSource');
+        
+        // Fetch video URL from JSON API
+        async function loadVideoUrl() {
+            try {
+                const response = await fetch('https://json1.btfcompany1.workers.dev/msm.json');
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch video URL');
+                }
+                
+                const data = await response.json();
+                
+                if (data.videoUrl) {
+                    videoSource.src = data.videoUrl;
+                    videoPlayer.load();
+                    
+                    // Enable button
+                    enterBtn.disabled = false;
+                    enterBtn.textContent = 'Enter';
+                } else {
+                    throw new Error('No video URL in response');
+                }
+                
+            } catch (error) {
+                console.error('Error loading video:', error);
+                enterBtn.textContent = 'Error';
+                enterBtn.disabled = true;
+            }
+        }
+        
+        // Load video URL on page load
+        loadVideoUrl();
+        
+        // Handle Enter button click
         enterBtn.addEventListener('click', function() {
+            if (enterBtn.disabled) return;
+            
             enterBtn.classList.add('hide');
             
             setTimeout(() => {
@@ -147,7 +190,8 @@
                 });
             }, 300);
         });
-
+        
+        // Prevent right-click on video
         videoPlayer.addEventListener('contextmenu', (e) => {
             e.preventDefault();
         });
