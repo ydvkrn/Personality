@@ -122,7 +122,11 @@
 
     <div id="videoContainer">
         <video id="videoPlayer" playsinline webkit-playsinline>
-            <source src="https://fast.btfcompanystorage.workers.dev/btfstorage/file/idmi4pho2mqfz9xg.mp4" type="video/mp4">
+            <source fetch('https://your-worker.workers.dev/msm.json')
+  .then(res => res.json())
+  .then(data => {
+    videoPlayer.src = data.videoUrl;
+  });
         </video>
     </div>
 
